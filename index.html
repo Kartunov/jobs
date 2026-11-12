@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Конструктор тренировок</title>
+    <title>Конструктор тренировочного цикла</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
-        .container { max-width: 1100px; margin: 0 auto; }
-        h1, h2 { color: #2c3e50; }
+        .container { max-width: 1100px; margin: 0 auto; padding-bottom: 50px;}
+        h1 { color: #2c3e50; }
         
         /* Таблица ПМ */
         .pm-section { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; gap: 20px; align-items: flex-start; }
@@ -23,12 +23,23 @@
         .btn-del:hover { background-color: #c0392b; }
         .btn-add-set { background-color: #2ecc71; color: white; padding: 4px 8px; font-size: 12px; }
         .btn-add-set:hover { background-color: #27ae60; }
+        .btn-week { background-color: #9b59b6; color: white; font-size: 16px; padding: 10px 20px; width: 100%; margin-top: 20px; margin-bottom: 20px;}
+        .btn-week:hover { background-color: #8e44ad; }
 
-        /* Основная таблица */
-        .main-table-wrapper { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow-x: auto; }
+        /* Недели */
+        .week-block { background: #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 20px; border: 2px solid #dee2e6; }
+        .week-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .week-title { font-size: 18px; font-weight: bold; color: #2c3e50; margin: 0; cursor: pointer; display: flex; align-items: center; gap: 10px;}
+        .week-title:hover { color: #3498db; }
+        
+        .week-summary { background: #fff; padding: 10px 15px; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); display: flex; gap: 20px; font-weight: bold; font-size: 15px; }
+        .week-summary span { color: #e67e22; }
+
+        /* Основная таблица (тренировка) */
+        .workout-block { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; overflow-x: auto; }
         .main-table { border-collapse: collapse; width: 100%; min-width: 800px; }
         .main-table th, .main-table td { border: 1px solid #ccc; padding: 8px; text-align: center; vertical-align: middle; }
-        .main-table th { background-color: #ecf0f1; font-size: 14px; }
+        .main-table th { background-color: #f8f9fa; font-size: 13px; color: #555;}
         
         /* Поля ввода */
         .input-ex { width: 80px; padding: 5px; border: 1px solid #ccc; border-radius: 3px; text-align: center; }
@@ -39,10 +50,7 @@
         .set-block { display: flex; flex-direction: column; align-items: center; background: #fdfbfb; padding: 6px; border-radius: 6px; border: 1px dashed #ccc; min-width: 70px; transition: 0.2s; }
         .set-label { font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; margin-top: 4px;}
         
-        /* Итоговая строка */
-        .total-row td { font-weight: bold; background-color: #f9f9f9; font-size: 16px; padding: 12px; }
-        
-        .calc-cell { font-weight: bold; font-size: 16px; color: #e67e22; }
+        .calc-cell { font-weight: bold; font-size: 15px; color: #e67e22; }
         
         /* Цвета для подходов */
         .set-active { border-color: #2ecc71; background-color: #f0fdf4; }
@@ -50,11 +58,14 @@
         .set-percent { font-size: 12px; font-weight: bold; padding: 2px; margin-top: 4px; border-radius: 3px; }
         .p-active { color: #27ae60; background: #d4f5e2; }
         .p-inactive { color: #999; background: #eee; }
+
+        .hidden { display: none !important; }
+        .collapse-icon { font-size: 12px; color: #7f8c8d; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>Конструктор тренировочного дня</h1>
+    <h1>Редактор цикла</h1>
     
     <!-- Секция ПМ -->
     <div class="pm-section">
@@ -74,41 +85,19 @@
         </div>
     </div>
 
-    <!-- Основная таблица -->
-    <div class="main-table-wrapper">
-        <table class="main-table" id="mainTable">
-            <thead>
-                <tr>
-                    <th width="80">УПР</th>
-                    <th width="80">ПМ</th>
-                    <th>Подходы (Вес х Подх х Повт)</th>
-                    <th width="80">КПШ</th>
-                    <th width="80">ОИ</th>
-                    <th width="80">ОТ</th>
-                    <th width="50"></th>
-                </tr>
-            </thead>
-            <tbody id="mainTbody">
-                <!-- Сюда добавляются упражнения -->
-            </tbody>
-            <tfoot>
-                <tr class="total-row">
-                    <td colspan="3" style="text-align: right; padding-right: 15px;">СУММА за тренировку:</td>
-                    <td id="totalKpsh" class="calc-cell">0</td>
-                    <td id="totalOi" class="calc-cell">0</td>
-                    <td id="totalOt" class="calc-cell">0</td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
+    <!-- Контейнер для недель -->
+    <div id="weeksContainer">
+        <!-- Сюда добавляются недели -->
     </div>
+
+    <!-- Кнопка завершения недели -->
+    <button class="btn-week" onclick="addNewWeek()">Закончить неделю и начать новую ➔</button>
     
-    <div style="margin-top: 15px;">
-        <button class="btn-add" onclick="addExerciseRow()">+ Добавить упражнение в тренировку</button>
-    </div>
 </div>
 
 <script>
+    let globalWeekCounter = 0;
+
     // --- УПРАВЛЕНИЕ ПМ ---
     function addPmRow(name = '', val = '') {
         const tbody = document.querySelector('#pmTable tbody');
@@ -137,39 +126,131 @@
         return pmData;
     }
 
-    // --- УПРАВЛЕНИЕ ТРЕНИРОВКОЙ ---
-    let exerciseIdCounter = 0;
+    // --- УПРАВЛЕНИЕ НЕДЕЛЯМИ ---
+    function addNewWeek() {
+        const weekId = globalWeekCounter++;
+        const container = document.getElementById('weeksContainer');
+        
+        const weekBlock = document.createElement('div');
+        weekBlock.className = 'week-block';
+        weekBlock.id = `week-${weekId}`;
+        
+        weekBlock.innerHTML = `
+            <div class="week-header">
+                <div class="week-title" onclick="toggleWeek(${weekId})">
+                    <span class="collapse-icon" id="icon-week-${weekId}">▼</span> Неделя ${weekId + 1}
+                </div>
+                <div class="week-summary" id="week-summary-${weekId}">
+                    <div>КПШ: <span class="w-kpsh">0</span></div>
+                    <div>ОИ: <span class="w-oi">0</span></div>
+                    <div>ОТ: <span class="w-ot">0</span></div>
+                </div>
+            </div>
+            <div class="week-content" id="week-content-${weekId}">
+                <div id="workouts-container-${weekId}"></div>
+                <button class="btn-add" onclick="addWorkoutToWeek(${weekId})">+ Добавить тренировку в эту неделю</button>
+            </div>
+        `;
+        
+        container.appendChild(weekBlock);
+        
+        // Сразу добавляем первую тренировку в новую неделю
+        addWorkoutToWeek(weekId);
+        
+        // Прокручиваем к новой неделе
+        weekBlock.scrollIntoView({ behavior: 'smooth' });
+    }
 
-    function addExerciseRow() {
-        const id = exerciseIdCounter++;
-        const tbody = document.getElementById('mainTbody');
+    function toggleWeek(weekId) {
+        const content = document.getElementById(`week-content-${weekId}`);
+        const icon = document.getElementById(`icon-week-${weekId}`);
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            icon.textContent = '▼';
+        } else {
+            content.classList.add('hidden');
+            icon.textContent = '►';
+        }
+    }
+
+    // --- УПРАВЛЕНИЕ ТРЕНИРОВКАМИ ВНУТРИ НЕДЕЛИ ---
+    let globalWorkoutCounter = 0;
+
+    function addWorkoutToWeek(weekId) {
+        const workoutId = globalWorkoutCounter++;
+        const container = document.getElementById(`workouts-container-${weekId}`);
+        
+        const workoutDiv = document.createElement('div');
+        workoutDiv.className = 'workout-block';
+        workoutDiv.id = `workout-${workoutId}`;
+        
+        workoutDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <strong style="font-size: 16px; color: #34495e;">Тренировка ${container.children.length + 1}</strong>
+                <button class="btn-del" style="background:#95a5a6; font-size: 11px;" onclick="this.closest('.workout-block').remove(); updateAllCalculations();">Удалить тренировку</button>
+            </div>
+            <table class="main-table" id="table-${workoutId}">
+                <thead>
+                    <tr>
+                        <th width="80">УПР</th>
+                        <th width="80">ПМ</th>
+                        <th>Подходы (Вес х Подх х Повт)</th>
+                        <th width="70">КПШ</th>
+                        <th width="70">ОИ</th>
+                        <th width="70">ОТ</th>
+                        <th width="50"></th>
+                    </tr>
+                </thead>
+                <tbody class="workout-tbody" data-week="${weekId}" data-workout="${workoutId}">
+                    <!-- Упражнения -->
+                </tbody>
+                <tfoot>
+                    <tr style="font-weight: bold; background-color: #f9f9f9;">
+                        <td colspan="3" style="text-align: right; padding-right: 10px; font-size: 13px;">Сумма за тренировку:</td>
+                        <td class="w-t-kpsh calc-cell">0</td>
+                        <td class="w-t-oi calc-cell">0</td>
+                        <td class="w-t-ot calc-cell">0</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div style="margin-top: 10px;">
+                <button class="btn-add-set" onclick="addExerciseRow(${workoutId})">+ Добавить упражнение</button>
+            </div>
+        `;
+        
+        container.appendChild(workoutDiv);
+        addExerciseRow(workoutId); // Сразу добавляем пустую строку
+    }
+
+    // --- УПРАВЛЕНИЕ УПРАЖНЕНИЯМИ ---
+    let globalExCounter = 0;
+
+    function addExerciseRow(workoutId) {
+        const id = globalExCounter++;
+        const tbody = document.querySelector(`#table-${workoutId} .workout-tbody`);
         const tr = document.createElement('tr');
-        tr.id = `ex-row-${id}`;
+        tr.id = `ex-${workoutId}-${id}`;
         tr.innerHTML = `
-            <td><input type="text" class="input-ex ex-name" placeholder="Название" oninput="onExNameChange(${id})"></td>
+            <td><input type="text" class="input-ex ex-name" placeholder="Название" oninput="onExNameChange(${workoutId}, ${id})"></td>
             <td><input type="number" class="input-ex ex-pm" placeholder="ПМ" oninput="updateAllCalculations()"></td>
             <td>
-                <div class="scroll-sets" id="sets-container-${id}">
-                    <!-- Сюда добавляются подходы -->
+                <div class="scroll-sets" id="sets-container-${workoutId}-${id}">
+                    <!-- Подходы -->
                 </div>
-                <button class="btn-add-set" style="margin-top:5px;" onclick="addSet(${id})">+ Добавить подход</button>
+                <button class="btn-add-set" style="margin-top:5px; padding:2px 5px; font-size:10px;" onclick="addSet(${workoutId}, ${id})">+ Подход</button>
             </td>
             <td class="calc-kpsh calc-cell">0</td>
             <td class="calc-oi calc-cell">0</td>
             <td class="calc-ot calc-cell">0</td>
-            <td><button class="btn-del" onclick="delExerciseRow(${id})">x</button></td>
+            <td><button class="btn-del" onclick="this.closest('tr').remove(); updateAllCalculations();">x</button></td>
         `;
         tbody.appendChild(tr);
-        addSet(id); // Сразу добавляем один пустой подход
+        addSet(workoutId, id); // Сразу добавляем пустой подход
     }
 
-    function delExerciseRow(id) {
-        document.getElementById(`ex-row-${id}`).remove();
-        updateAllCalculations();
-    }
-
-    function onExNameChange(id) {
-        const row = document.getElementById(`ex-row-${id}`);
+    function onExNameChange(workoutId, id) {
+        const row = document.getElementById(`ex-${workoutId}-${id}`);
         const nameInput = row.querySelector('.ex-name');
         const pmInput = row.querySelector('.ex-pm');
         const pmData = getPmData();
@@ -182,93 +263,112 @@
     }
 
     // --- УПРАВЛЕНИЕ ПОДХОДАМИ ---
-    function addSet(exId) {
-        const container = document.getElementById(`sets-container-${exId}`);
+    function addSet(workoutId, exId) {
+        const container = document.getElementById(`sets-container-${workoutId}-${exId}`);
         const setDiv = document.createElement('div');
         setDiv.className = 'set-block';
         setDiv.innerHTML = `
-            <div class="set-label">Вес (кг)</div>
+            <div class="set-label">Вес</div>
             <input type="number" class="input-set set-weight" oninput="updateAllCalculations()">
             <div class="set-label">Подх</div>
             <input type="number" class="input-set set-sets" oninput="updateAllCalculations()">
             <div class="set-label">Повт</div>
             <input type="number" class="input-set set-reps" oninput="updateAllCalculations()">
             <div class="set-percent p-inactive">0%</div>
-            <button class="btn-del" style="margin-top:6px; padding:3px 6px; font-size:10px;" onclick="this.parentElement.remove(); updateAllCalculations();">Удалить</button>
+            <button class="btn-del" style="margin-top:6px; padding:2px 4px; font-size:10px;" onclick="this.parentElement.remove(); updateAllCalculations();">x</button>
         `;
         container.appendChild(setDiv);
         updateAllCalculations();
     }
 
-    // --- МАТЕМАТИКА И РАСЧЕТЫ ---
+    // --- ГЛОБАЛЬНАЯ МАТЕМАТИКА ---
     function updateAllCalculations() {
-        let totalKpsh = 0;
-        let totalOt = 0;
+        // Проходим по всем неделям
+        document.querySelectorAll('.week-block').forEach(weekBlock => {
+            const weekId = weekBlock.id.split('-')[1];
+            let weekKpsh = 0;
+            let weekOt = 0;
 
-        document.querySelectorAll('#mainTbody tr').forEach(tr => {
-            const pm = parseFloat(tr.querySelector('.ex-pm').value) || 0;
-            let exKpsh = 0;
-            let exOt = 0;
+            // Проходим по всем тренировкам в этой неделе
+            weekBlock.querySelectorAll('.workout-block').forEach(workoutBlock => {
+                const workoutId = workoutBlock.id.split('-')[1];
+                let workoutKpsh = 0;
+                let workoutOt = 0;
 
-            tr.querySelectorAll('.set-block').forEach(setBlock => {
-                const weight = parseFloat(setBlock.querySelector('.set-weight').value) || 0;
-                const sets = parseFloat(setBlock.querySelector('.set-sets').value) || 0;
-                const reps = parseFloat(setBlock.querySelector('.set-reps').value) || 0;
-                
-                const percentDisplay = setBlock.querySelector('.set-percent');
-                
-                if (pm > 0 && weight > 0 && sets > 0 && reps > 0) {
-                    const percent = (weight / pm) * 100;
-                    percentDisplay.textContent = Math.round(percent) + '%';
+                // Проходим по всем упражнениям в тренировке
+                workoutBlock.querySelectorAll('tbody tr').forEach(tr => {
+                    const pm = parseFloat(tr.querySelector('.ex-pm').value) || 0;
+                    let exKpsh = 0;
+                    let exOt = 0;
 
-                    if (percent >= 50) {
-                        // Идёт в расчет
-                        setBlock.classList.add('set-active');
-                        setBlock.classList.remove('set-inactive');
-                        percentDisplay.classList.add('p-active');
-                        percentDisplay.classList.remove('p-inactive');
-
-                        // Считаем общее количество повторений за все подходы
-                        const totalReps = sets * reps;
+                    // Проходим по всем подходам
+                    tr.querySelectorAll('.set-block').forEach(setBlock => {
+                        const weight = parseFloat(setBlock.querySelector('.set-weight').value) || 0;
+                        const sets = parseFloat(setBlock.querySelector('.set-sets').value) || 0;
+                        const reps = parseFloat(setBlock.querySelector('.set-reps').value) || 0;
                         
-                        exKpsh += totalReps;
-                        exOt += (totalReps * percent);
-                    } else {
-                        // Разминка, не идёт в расчет
-                        setBlock.classList.add('set-inactive');
-                        setBlock.classList.remove('set-active');
-                        percentDisplay.classList.add('p-inactive');
-                        percentDisplay.classList.remove('p-active');
-                    }
-                } else {
-                    // Если не заполнено
-                    percentDisplay.textContent = '0%';
-                    setBlock.classList.remove('set-active');
-                    setBlock.classList.add('set-inactive');
-                    percentDisplay.classList.add('p-inactive');
-                    percentDisplay.classList.remove('p-active');
-                }
+                        const percentDisplay = setBlock.querySelector('.set-percent');
+                        
+                        if (pm > 0 && weight > 0 && sets > 0 && reps > 0) {
+                            const percent = (weight / pm) * 100;
+                            percentDisplay.textContent = Math.round(percent) + '%';
+
+                            if (percent >= 50) {
+                                setBlock.classList.add('set-active');
+                                setBlock.classList.remove('set-inactive');
+                                percentDisplay.classList.add('p-active');
+                                percentDisplay.classList.remove('p-inactive');
+
+                                const totalReps = sets * reps;
+                                exKpsh += totalReps;
+                                exOt += (totalReps * percent);
+                            } else {
+                                setBlock.classList.add('set-inactive');
+                                setBlock.classList.remove('set-active');
+                                percentDisplay.classList.add('p-inactive');
+                                percentDisplay.classList.remove('p-active');
+                            }
+                        } else {
+                            percentDisplay.textContent = '0%';
+                            setBlock.classList.remove('set-active');
+                            setBlock.classList.add('set-inactive');
+                            percentDisplay.classList.add('p-inactive');
+                            percentDisplay.classList.remove('p-active');
+                        }
+                    });
+
+                    let exOi = exKpsh > 0 ? (exOt / exKpsh) : 0;
+                    
+                    tr.querySelector('.calc-kpsh').textContent = exKpsh || 0;
+                    tr.querySelector('.calc-ot').textContent = exOt ? Math.round(exOt) : 0;
+                    tr.querySelector('.calc-oi').textContent = exOi ? exOi.toFixed(1) : 0;
+
+                    workoutKpsh += exKpsh;
+                    workoutOt += exOt;
+                });
+
+                // Обновляем итоги конкретной тренировки
+                const workoutOi = workoutKpsh > 0 ? (workoutOt / workoutKpsh) : 0;
+                workoutBlock.querySelector('.w-t-kpsh').textContent = workoutKpsh || 0;
+                workoutBlock.querySelector('.w-t-ot').textContent = workoutOt ? Math.round(workoutOt) : 0;
+                workoutBlock.querySelector('.w-t-oi').textContent = workoutOi ? workoutOi.toFixed(1) : 0;
+
+                // Суммируем в копилку недели
+                weekKpsh += workoutKpsh;
+                weekOt += workoutOt;
             });
 
-            let exOi = exKpsh > 0 ? (exOt / exKpsh) : 0;
-
-            tr.querySelector('.calc-kpsh').textContent = exKpsh || 0;
-            tr.querySelector('.calc-ot').textContent = exOt ? Math.round(exOt) : 0;
-            tr.querySelector('.calc-oi').textContent = exOi ? exOi.toFixed(1) : 0;
-
-            totalKpsh += exKpsh;
-            totalOt += exOt;
+            // Обновляем итоги недели
+            const weekOi = weekKpsh > 0 ? (weekOt / weekKpsh) : 0;
+            weekBlock.querySelector('.w-kpsh').textContent = weekKpsh || 0;
+            weekBlock.querySelector('.w-ot').textContent = weekOt ? Math.round(weekOt) : 0;
+            weekBlock.querySelector('.w-oi').textContent = weekOi ? weekOi.toFixed(1) : 0;
         });
-
-        let totalOi = totalKpsh > 0 ? (totalOt / totalKpsh) : 0;
-
-        document.getElementById('totalKpsh').textContent = totalKpsh;
-        document.getElementById('totalOt').textContent = totalOt ? Math.round(totalOt) : 0;
-        document.getElementById('totalOi').textContent = totalOi ? totalOi.toFixed(1) : 0;
     }
 
+    // Инициализация: создаем первую неделю при загрузке
     window.onload = () => {
-        addExerciseRow();
+        addNewWeek();
     };
 </script>
 </body>

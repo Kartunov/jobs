@@ -27,6 +27,8 @@
         .btn-week:hover { background-color: #8e44ad; }
         .btn-copy { background-color: #f39c12; color: white; font-size: 11px; padding: 3px 8px; margin-left: 10px;}
         .btn-copy:hover { background-color: #e67e22; }
+        .btn-delete-week { background-color: #e74c3c; color: white; font-size: 11px; padding: 3px 8px; margin-left: 5px;}
+        .btn-delete-week:hover { background-color: #c0392b; }
 
         /* Недели */
         .week-block { background: #e9ecef; border-radius: 6px; padding: 10px; margin-bottom: 15px; border: 1px solid #dee2e6; }
@@ -161,7 +163,8 @@
                 <div class="week-title-wrapper">
                     <span class="collapse-icon" id="icon-week-${weekId}" onclick="toggleWeek(${weekId})" style="cursor:pointer;">▼</span> 
                     <input type="text" class="week-name-input" id="name-week-${weekId}" value="${defaultName}" placeholder="Название микроцикла...">
-                    <button class="btn-copy" onclick="copyWeek(${weekId})">📄 Копировать неделю</button>
+                    <button class="btn-copy" onclick="copyWeek(${weekId})">📄 Копировать</button>
+                    <button class="btn-delete-week" onclick="deleteWeek(${weekId})">🗑 Удалить</button>
                 </div>
                 <div class="week-summary" id="week-summary-${weekId}">
                     <div>КПШ: <span class="w-kpsh main-val">0</span><span class="trend-container" id="trend-kpsh-${weekId}"></span></div>
@@ -186,6 +189,17 @@
         
         weekBlock.scrollIntoView({ behavior: 'smooth' });
         updateAllCalculations();
+    }
+
+    // Удаление недели
+    function deleteWeek(weekId) {
+        if(confirm('Вы уверены, что хотите удалить эту неделю? Все данные внутри будут потеряны.')) {
+            const weekBlock = document.getElementById(`week-${weekId}`);
+            if (weekBlock) {
+                weekBlock.remove();
+                updateAllCalculations();
+            }
+        }
     }
 
     function toggleWeek(weekId) {
@@ -215,7 +229,6 @@
             const newWorkoutDiv = document.createElement('div');
             newWorkoutDiv.className = 'workout-block';
             newWorkoutDiv.id = `workout-${workoutId}`;
-            // Привязываем к оригинальной тренировке по индексу (1-я к 1-й, 2-я ко 2-й)
             newWorkoutDiv.dataset.parentWorkoutId = sourceWorkout.id.split('-')[1];
             
             newWorkoutDiv.innerHTML = `
@@ -263,7 +276,7 @@
                 
                 const newTr = document.createElement('tr');
                 newTr.id = `ex-${workoutId}-${exId}`;
-                newTr.dataset.parentExId = sourceTr.id.split('-')[2]; // Привязка к ID оригинального упражнения
+                newTr.dataset.parentExId = sourceTr.id.split('-')[2]; 
                 
                 newTr.innerHTML = `
                     <td><input type="text" class="input-ex ex-name" value="${name}" placeholder="Название" oninput="onExNameChange(${workoutId}, ${exId})"></td>
@@ -411,24 +424,20 @@
 
     // --- ГЛОБАЛЬНАЯ МАТЕМАТИКА ---
     function updateAllCalculations() {
-        // Проходим по всем неделям
         document.querySelectorAll('.week-block').forEach(weekBlock => {
             let weekKpsh = 0;
             let weekOt = 0;
 
-            // Проходим по тренировкам
             weekBlock.querySelectorAll('.workout-block').forEach(workoutBlock => {
                 const workoutId = workoutBlock.id.split('-')[1];
                 let workoutKpsh = 0;
                 let workoutOt = 0;
 
-                // Проходим по упражнениям
                 workoutBlock.querySelectorAll('tbody tr').forEach(tr => {
                     const pm = parseFloat(tr.querySelector('.ex-pm').value) || 0;
                     let exKpsh = 0;
                     let exOt = 0;
 
-                    // Считаем подходы
                     tr.querySelectorAll('.set-block').forEach(setBlock => {
                         const weight = parseFloat(setBlock.querySelector('.set-weight').value) || 0;
                         const sets = parseFloat(setBlock.querySelector('.set-sets').value) || 0;
@@ -458,7 +467,6 @@
                         }
                     });
 
-                    // Округляем значения упражнения
                     const dispExKpsh = Math.round(exKpsh);
                     const dispExOt = Math.round(exOt);
                     const exOi = exKpsh > 0 ? (exOt / exKpsh) : 0;
@@ -468,11 +476,10 @@
                     tr.querySelector('.calc-ot').innerHTML = `${dispExOt}<span class="trend-container" id="trend-ex-ot-${workoutId}-${tr.id.split('-')[2]}"></span>`;
                     tr.querySelector('.calc-oi').innerHTML = `${dispExOi}<span class="trend-container" id="trend-ex-oi-${workoutId}-${tr.id.split('-')[2]}"></span>`;
 
-                    // Сравнение упражнения с родителем
                     const parentExId = tr.dataset.parentExId;
                     if (parentExId) {
                         const parentTr = document.getElementById(`ex-${workoutBlock.dataset.parentWorkoutId}-${parentExId}`);
-                        if (parentTr) {
+                        if (parentTr && parentTr.querySelector('.calc-kpsh')) {
                             const pKpsh = parseFloat(parentTr.querySelector('.calc-kpsh').textContent) || 0;
                             const pOt = parseFloat(parentTr.querySelector('.calc-ot').textContent) || 0;
                             const pOi = parseFloat(parentTr.querySelector('.calc-oi').textContent) || 0;
@@ -487,7 +494,6 @@
                     workoutOt += exOt;
                 });
 
-                // Округляем значения тренировки
                 const dispWKpsh = Math.round(workoutKpsh);
                 const dispWOt = Math.round(workoutOt);
                 const workoutOi = workoutKpsh > 0 ? (workoutOt / workoutKpsh) : 0;
@@ -497,11 +503,10 @@
                 workoutBlock.querySelector('.w-t-ot').innerHTML = `${dispWOt}<span class="trend-container" id="trend-w-ot-${workoutId}"></span>`;
                 workoutBlock.querySelector('.w-t-oi').innerHTML = `${dispWOi}<span class="trend-container" id="trend-w-oi-${workoutId}"></span>`;
 
-                // Сравнение тренировки с родителем
                 const parentWorkoutId = workoutBlock.dataset.parentWorkoutId;
                 if (parentWorkoutId) {
                     const parentWorkout = document.getElementById(`workout-${parentWorkoutId}`);
-                    if (parentWorkout) {
+                    if (parentWorkout && parentWorkout.querySelector('.w-t-kpsh')) {
                         const pWKpsh = parseFloat(parentWorkout.querySelector('.w-t-kpsh').textContent) || 0;
                         const pWOt = parseFloat(parentWorkout.querySelector('.w-t-ot').textContent) || 0;
                         const pWOi = parseFloat(parentWorkout.querySelector('.w-t-oi').textContent) || 0;
@@ -516,7 +521,6 @@
                 weekOt += workoutOt;
             });
 
-            // Округляем значения недели
             const dispKpsh = Math.round(weekKpsh);
             const dispOt = Math.round(weekOt);
             const weekOi = weekKpsh > 0 ? (weekOt / weekKpsh) : 0;
@@ -526,7 +530,6 @@
             weekBlock.querySelector('.w-ot').innerHTML = `${dispOt}<span class="trend-container" id="trend-ot-${weekBlock.id.split('-')[1]}"></span>`;
             weekBlock.querySelector('.w-oi').innerHTML = `${dispOi}<span class="trend-container" id="trend-oi-${weekBlock.id.split('-')[1]}"></span>`;
 
-            // Сравнение недели с родителем
             const parentId = weekBlock.dataset.parentId;
             if (parentId) {
                 const parentBlock = document.getElementById(`week-${parentId}`);

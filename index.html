@@ -5,71 +5,85 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Конструктор тренировочного цикла</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
-        .container { max-width: 1300px; margin: 0 auto; padding-bottom: 50px; }
-        h1 { color: #2c3e50; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 10px; font-size: 13px; }
+        .container { max-width: 1400px; margin: 0 auto; padding-bottom: 50px; }
+        h1 { color: #2c3e50; font-size: 20px; margin-top: 5px; margin-bottom: 15px;}
         
         /* Таблица ПМ */
-        .pm-section { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; gap: 20px; align-items: flex-start; }
-        .pm-table { border-collapse: collapse; }
-        .pm-table th, .pm-table td { border: 1px solid #ddd; padding: 5px 10px; text-align: center; }
-        .pm-table input { width: 70px; border: none; text-align: center; font-size: 14px; outline: none; }
+        .pm-section { background: white; padding: 10px; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start; }
+        .pm-table { border-collapse: collapse; font-size: 12px;}
+        .pm-table th, .pm-table td { border: 1px solid #ddd; padding: 3px 8px; text-align: center; }
+        .pm-table input { width: 60px; border: none; text-align: center; font-size: 12px; outline: none; }
         
         /* Кнопки */
-        button { cursor: pointer; border: none; border-radius: 4px; padding: 8px 15px; font-weight: bold; transition: 0.2s; font-family: inherit; }
+        button { cursor: pointer; border: none; border-radius: 4px; padding: 5px 10px; font-weight: bold; transition: 0.2s; font-family: inherit; font-size: 12px;}
         .btn-add { background-color: #3498db; color: white; }
         .btn-add:hover { background-color: #2980b9; }
-        .btn-del { background-color: #e74c3c; color: white; padding: 4px 8px; font-size: 12px; }
+        .btn-del { background-color: #e74c3c; color: white; padding: 2px 6px; font-size: 11px; }
         .btn-del:hover { background-color: #c0392b; }
-        .btn-add-set { background-color: #2ecc71; color: white; padding: 4px 8px; font-size: 12px; }
+        .btn-add-set { background-color: #2ecc71; color: white; padding: 2px 6px; font-size: 11px; }
         .btn-add-set:hover { background-color: #27ae60; }
-        .btn-week { background-color: #9b59b6; color: white; font-size: 16px; padding: 10px 20px; width: 100%; margin-top: 20px; margin-bottom: 20px;}
+        .btn-week { background-color: #9b59b6; color: white; font-size: 14px; padding: 8px 15px; width: 100%; margin-top: 15px; margin-bottom: 15px;}
         .btn-week:hover { background-color: #8e44ad; }
-        .btn-copy { background-color: #f39c12; color: white; font-size: 12px; padding: 4px 10px; margin-left: 10px;}
+        .btn-copy { background-color: #f39c12; color: white; font-size: 11px; padding: 3px 8px; margin-left: 10px;}
         .btn-copy:hover { background-color: #e67e22; }
 
         /* Недели */
-        .week-block { background: #e9ecef; border-radius: 8px; padding: 15px; margin-bottom: 20px; border: 2px solid #dee2e6; }
-        .week-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .week-block { background: #e9ecef; border-radius: 6px; padding: 10px; margin-bottom: 15px; border: 1px solid #dee2e6; }
+        .week-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .week-title-wrapper { display: flex; align-items: center; gap: 10px; }
-        .week-title { font-size: 18px; font-weight: bold; color: #2c3e50; margin: 0; cursor: pointer; display: flex; align-items: center; gap: 10px;}
+        .week-title { font-size: 15px; font-weight: bold; color: #2c3e50; margin: 0; cursor: pointer; display: flex; align-items: center; gap: 5px;}
         .week-title:hover { color: #3498db; }
         
-        /* Инпут для названия недели */
-        .week-name-input { font-size: 18px; font-weight: bold; color: #2c3e50; border: 1px solid transparent; background: transparent; padding: 2px 5px; border-radius: 4px; width: 200px; font-family: inherit;}
+        .week-name-input { font-size: 15px; font-weight: bold; color: #2c3e50; border: 1px solid transparent; background: transparent; padding: 2px 4px; border-radius: 4px; width: 180px; font-family: inherit;}
         .week-name-input:hover { border-color: #ccc; background: white; }
         .week-name-input:focus { border-color: #3498db; background: white; outline: none; }
         
-        .week-summary { background: #fff; padding: 10px 15px; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); display: flex; gap: 20px; font-weight: bold; font-size: 15px; align-items: center;}
-        .week-summary span { color: #e67e22; }
+        .week-summary { background: #fff; padding: 6px 12px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; gap: 15px; font-weight: bold; font-size: 13px; align-items: center;}
+        .week-summary span.main-val { color: #e67e22; }
+        
+        /* Стрелочки динамики */
+        .trend-indicator { font-size: 11px; margin-left: 3px; cursor: help; position: relative; display: inline-block; }
+        .trend-up { color: #27ae60; }
+        .trend-down { color: #c0392b; }
 
         /* Основная таблица (тренировка) */
-        .workout-block { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px; overflow-x: auto; }
-        .main-table { border-collapse: collapse; width: 100%; min-width: 950px; }
-        .main-table th, .main-table td { border: 1px solid #ccc; padding: 8px; text-align: center; vertical-align: middle; }
-        .main-table th { background-color: #f8f9fa; font-size: 13px; color: #555;}
+        .workout-block { background: white; padding: 10px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 10px; overflow-x: auto; }
+        .main-table { border-collapse: collapse; width: 100%; min-width: 900px; }
+        .main-table th, .main-table td { border: 1px solid #ccc; padding: 4px; text-align: center; vertical-align: middle; }
+        .main-table th { background-color: #f8f9fa; font-size: 11px; color: #555;}
         
         /* Поля ввода */
-        .input-ex { width: 80px; padding: 5px; border: 1px solid #ccc; border-radius: 3px; text-align: center; }
-        .input-ex.comment { width: 150px; text-align: left; }
-        .input-set { width: 45px; padding: 5px; border: 1px solid #ccc; border-radius: 3px; text-align: center; font-size: 13px; }
+        .input-ex { width: 80px; padding: 3px 5px; border: 1px solid #ccc; border-radius: 3px; text-align: center; font-size: 12px;}
+        .input-ex.comment { width: 140px; text-align: left; }
+        .input-set { width: 35px; padding: 3px; border: 1px solid #ccc; border-radius: 3px; text-align: center; font-size: 11px; }
         
         /* Блок подхода */
-        .scroll-sets { display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
-        .set-block { display: flex; flex-direction: column; align-items: center; background: #fdfbfb; padding: 6px; border-radius: 6px; border: 1px dashed #ccc; min-width: 70px; transition: 0.2s; }
-        .set-label { font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; margin-top: 4px;}
+        .scroll-sets { display: flex; flex-wrap: nowrap; gap: 5px; overflow-x: auto; padding-bottom: 3px; }
+        .set-block { display: flex; flex-direction: column; align-items: center; background: #fdfbfb; padding: 4px; border-radius: 4px; border: 1px dashed #ccc; min-width: 55px; transition: 0.2s; }
+        .set-label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 1px; margin-top: 1px;}
         
-        .calc-cell { font-weight: bold; font-size: 15px; color: #e67e22; }
+        .calc-cell { font-weight: bold; font-size: 13px; color: #e67e22; }
         
         /* Цвета для подходов */
-        .set-active { border-color: #2ecc71; background-color: #f0fdf4; }
-        .set-inactive { border-color: #eee; background-color: #fafafa; opacity: 0.7; }
-        .set-percent { font-size: 12px; font-weight: bold; padding: 2px; margin-top: 4px; border-radius: 3px; }
-        .p-active { color: #27ae60; background: #d4f5e2; }
-        .p-inactive { color: #999; background: #eee; }
+        .set-percent { font-size: 10px; font-weight: bold; padding: 1px 3px; margin-top: 3px; border-radius: 3px; }
+        .set-inactive { border-color: #eee; background-color: #fafafa; opacity: 0.6; }
+        .set-inactive .set-percent { color: #999; background: #eee; }
+
+        .set-green { border-color: #2ecc71; background-color: #f0fdf4; }
+        .set-green .set-percent { color: #27ae60; background: #d4f5e2; }
+
+        .set-yellow { border-color: #f1c40f; background-color: #fffdf0; }
+        .set-yellow .set-percent { color: #d35400; background: #fcf3cf; }
+
+        .set-red { border-color: #e74c3c; background-color: #fdf2f1; }
+        .set-red .set-percent { color: #c0392b; background: #fadbd8; }
+
+        .set-black { border-color: #2c3e50; background-color: #f4f6f7; }
+        .set-black .set-percent { color: #fff; background: #2c3e50; }
 
         .hidden { display: none !important; }
-        .collapse-icon { font-size: 12px; color: #7f8c8d; }
+        .collapse-icon { font-size: 10px; color: #7f8c8d; }
     </style>
 </head>
 <body>
@@ -79,27 +93,22 @@
     <!-- Секция ПМ -->
     <div class="pm-section">
         <div>
-            <h3 style="margin-top:0;">Мои ПМ (кг)</h3>
+            <div style="font-weight:bold; margin-bottom:5px; font-size:12px;">Мои ПМ (кг)</div>
             <table class="pm-table" id="pmTable">
                 <thead>
                     <tr><th>УПР</th><th>ПМ</th><th></th></tr>
                 </thead>
-                <tbody id="pmTbody">
-                    <!-- Пустые строки будут добавлены скриптом -->
-                </tbody>
+                <tbody id="pmTbody"></tbody>
             </table>
-            <button class="btn-add" style="margin-top: 10px; font-size: 12px;" onclick="addPmRow()">+ Добавить ПМ</button>
+            <button class="btn-add" style="margin-top: 5px;" onclick="addPmRow()">+ Добавить ПМ</button>
         </div>
     </div>
 
     <!-- Контейнер для недель -->
-    <div id="weeksContainer">
-        <!-- Сюда добавляются недели -->
-    </div>
+    <div id="weeksContainer"></div>
 
     <!-- Кнопка завершения недели -->
     <button class="btn-week" onclick="addNewWeek()">Закончить неделю и начать новую ➔</button>
-    
 </div>
 
 <script>
@@ -136,13 +145,14 @@
     }
 
     // --- УПРАВЛЕНИЕ НЕДЕЛЯМИ ---
-    function addNewWeek(copyFromWeekId = null) {
+    function addNewWeek(sourceWeekId = null) {
         const weekId = globalWeekCounter++;
         const container = document.getElementById('weeksContainer');
         
         const weekBlock = document.createElement('div');
         weekBlock.className = 'week-block';
         weekBlock.id = `week-${weekId}`;
+        weekBlock.dataset.parentId = sourceWeekId !== null ? sourceWeekId : '';
         
         let defaultName = `Неделя ${weekId + 1}`;
         
@@ -154,9 +164,9 @@
                     <button class="btn-copy" onclick="copyWeek(${weekId})">📄 Копировать неделю</button>
                 </div>
                 <div class="week-summary" id="week-summary-${weekId}">
-                    <div>КПШ: <span class="w-kpsh">0</span></div>
-                    <div>ОИ: <span class="w-oi">0</span></div>
-                    <div>ОТ: <span class="w-ot">0</span></div>
+                    <div>КПШ: <span class="w-kpsh main-val">0</span><span class="trend-container" id="trend-kpsh-${weekId}"></span></div>
+                    <div>ОИ: <span class="w-oi main-val">0</span><span class="trend-container" id="trend-oi-${weekId}"></span></div>
+                    <div>ОТ: <span class="w-ot main-val">0</span><span class="trend-container" id="trend-ot-${weekId}"></span></div>
                 </div>
             </div>
             <div class="week-content" id="week-content-${weekId}">
@@ -167,16 +177,13 @@
         
         container.appendChild(weekBlock);
         
-        if (copyFromWeekId === null) {
-            // Если это просто новая неделя, добавляем одну пустую тренировку
+        if (sourceWeekId === null) {
             addWorkoutToWeek(weekId);
         } else {
-            // Если это копия — берем название
-            const originalName = document.getElementById(`name-week-${copyFromWeekId}`).value;
+            const originalName = document.getElementById(`name-week-${sourceWeekId}`).value;
             document.getElementById(`name-week-${weekId}`).value = originalName + ' (копия)';
         }
         
-        // Прокручиваем к новой неделе
         weekBlock.scrollIntoView({ behavior: 'smooth' });
         updateAllCalculations();
     }
@@ -195,65 +202,60 @@
 
     // Копирование недели
     function copyWeek(sourceWeekId) {
-        // 1. Создаем новую неделю
         const newWeekId = globalWeekCounter;
-        addNewWeek(sourceWeekId); // Передаем ID источника, чтобы скопировать название
+        addNewWeek(sourceWeekId);
         
         const sourceWeekBlock = document.getElementById(`week-${sourceWeekId}`);
         const newWeekContent = document.getElementById(`week-content-${newWeekId}`);
         
-        // Очищаем новую неделю от пустой дефолтной тренировки, которую создал addNewWeek
         newWeekContent.querySelector('#workouts-container-' + newWeekId).innerHTML = '';
         
-        // 2. Копируем все тренировки
-        sourceWeekBlock.querySelectorAll('.workout-block').forEach(sourceWorkout => {
-            const workoutId = globalWorkoutCounter;
+        sourceWeekBlock.querySelectorAll('.workout-block').forEach((sourceWorkout, wIndex) => {
+            const workoutId = globalWorkoutCounter++;
             const newWorkoutDiv = document.createElement('div');
             newWorkoutDiv.className = 'workout-block';
             newWorkoutDiv.id = `workout-${workoutId}`;
+            // Привязываем к оригинальной тренировке по индексу (1-я к 1-й, 2-я ко 2-й)
+            newWorkoutDiv.dataset.parentWorkoutId = sourceWorkout.id.split('-')[1];
             
             newWorkoutDiv.innerHTML = `
-                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                    <strong style="font-size: 16px; color: #34495e;">Тренировка ${newWeekContent.querySelector('#workouts-container-' + newWeekId).children.length + 1}</strong>
-                    <button class="btn-del" style="background:#95a5a6; font-size: 11px;" onclick="this.closest('.workout-block').remove(); updateAllCalculations();">Удалить тренировку</button>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <strong style="font-size: 13px; color: #34495e;">Тренировка ${wIndex + 1}</strong>
+                    <button class="btn-del" style="background:#95a5a6; font-size: 10px;" onclick="this.closest('.workout-block').remove(); updateAllCalculations();">Удалить тренировку</button>
                 </div>
                 <table class="main-table" id="table-${workoutId}">
                     <thead>
                         <tr>
                             <th width="80">УПР</th>
-                            <th width="80">ПМ</th>
+                            <th width="60">ПМ</th>
                             <th>Подходы (Вес х Подх х Повт)</th>
                             <th width="70">КПШ</th>
                             <th width="70">ОИ</th>
                             <th width="70">ОТ</th>
-                            <th width="150">Комментарий</th>
-                            <th width="50"></th>
+                            <th width="140">Комментарий</th>
+                            <th width="30"></th>
                         </tr>
                     </thead>
-                    <tbody class="workout-tbody">
-                    </tbody>
+                    <tbody class="workout-tbody"></tbody>
                     <tfoot>
                         <tr style="font-weight: bold; background-color: #f9f9f9;">
-                            <td colspan="3" style="text-align: right; padding-right: 10px; font-size: 13px;">Сумма за тренировку:</td>
-                            <td class="w-t-kpsh calc-cell">0</td>
-                            <td class="w-t-oi calc-cell">0</td>
-                            <td class="w-t-ot calc-cell">0</td>
+                            <td colspan="3" style="text-align: right; padding-right: 10px; font-size: 11px;">Сумма за тренировку:</td>
+                            <td class="w-t-kpsh calc-cell">0<span class="trend-container" id="trend-w-kpsh-${workoutId}"></span></td>
+                            <td class="w-t-oi calc-cell">0<span class="trend-container" id="trend-w-oi-${workoutId}"></span></td>
+                            <td class="w-t-ot calc-cell">0<span class="trend-container" id="trend-w-ot-${workoutId}"></span></td>
                             <td colspan="2"></td>
                         </tr>
                     </tfoot>
                 </table>
-                <div style="margin-top: 10px;">
+                <div style="margin-top: 5px;">
                     <button class="btn-add-set" onclick="addExerciseRow(${workoutId})">+ Добавить упражнение</button>
                 </div>
             `;
             
             newWeekContent.querySelector('#workouts-container-' + newWeekId).appendChild(newWorkoutDiv);
-            globalWorkoutCounter++; // Инкрементим счетчик тренировок
-            
             const newTbody = newWorkoutDiv.querySelector('.workout-tbody');
             
-            // 3. Копируем упражнения
-            sourceWorkout.querySelectorAll('.workout-tbody tr').forEach(sourceTr => {
+            sourceWorkout.querySelectorAll('.workout-tbody tr').forEach((sourceTr, eIndex) => {
                 const exId = globalExCounter++;
                 const pm = sourceTr.querySelector('.ex-pm').value;
                 const name = sourceTr.querySelector('.ex-name').value;
@@ -261,31 +263,32 @@
                 
                 const newTr = document.createElement('tr');
                 newTr.id = `ex-${workoutId}-${exId}`;
+                newTr.dataset.parentExId = sourceTr.id.split('-')[2]; // Привязка к ID оригинального упражнения
+                
                 newTr.innerHTML = `
                     <td><input type="text" class="input-ex ex-name" value="${name}" placeholder="Название" oninput="onExNameChange(${workoutId}, ${exId})"></td>
                     <td><input type="number" class="input-ex ex-pm" value="${pm}" placeholder="ПМ" oninput="updateAllCalculations()"></td>
                     <td>
                         <div class="scroll-sets" id="sets-container-${workoutId}-${exId}"></div>
-                        <button class="btn-add-set" style="margin-top:5px; padding:2px 5px; font-size:10px;" onclick="addSet(${workoutId}, ${exId})">+ Подход</button>
+                        <button class="btn-add-set" style="margin-top:3px;" onclick="addSet(${workoutId}, ${exId})">+ Подход</button>
                     </td>
-                    <td class="calc-kpsh calc-cell">0</td>
-                    <td class="calc-oi calc-cell">0</td>
-                    <td class="calc-ot calc-cell">0</td>
-                    <td><input type="text" class="input-ex comment ex-comment" value="${comment}" placeholder="До отказа..."></td>
+                    <td class="calc-kpsh calc-cell">0<span class="trend-container" id="trend-ex-kpsh-${workoutId}-${exId}"></span></td>
+                    <td class="calc-oi calc-cell">0<span class="trend-container" id="trend-ex-oi-${workoutId}-${exId}"></span></td>
+                    <td class="calc-ot calc-cell">0<span class="trend-container" id="trend-ex-ot-${workoutId}-${exId}"></span></td>
+                    <td><input type="text" class="input-ex comment ex-comment" value="${comment}" placeholder="Комментарий..."></td>
                     <td><button class="btn-del" onclick="this.closest('tr').remove(); updateAllCalculations();">x</button></td>
                 `;
                 newTbody.appendChild(newTr);
                 
                 const newSetsContainer = newTr.querySelector('.scroll-sets');
                 
-                // 4. Копируем подходы
                 sourceTr.querySelectorAll('.set-block').forEach(sourceSet => {
                     const weight = sourceSet.querySelector('.set-weight').value;
                     const sets = sourceSet.querySelector('.set-sets').value;
                     const reps = sourceSet.querySelector('.set-reps').value;
                     
                     const setDiv = document.createElement('div');
-                    setDiv.className = 'set-block';
+                    setDiv.className = 'set-block set-inactive';
                     setDiv.innerHTML = `
                         <div class="set-label">Вес</div>
                         <input type="number" class="input-set set-weight" value="${weight}" oninput="updateAllCalculations()">
@@ -293,8 +296,8 @@
                         <input type="number" class="input-set set-sets" value="${sets}" oninput="updateAllCalculations()">
                         <div class="set-label">Повт</div>
                         <input type="number" class="input-set set-reps" value="${reps}" oninput="updateAllCalculations()">
-                        <div class="set-percent p-inactive">0%</div>
-                        <button class="btn-del" style="margin-top:6px; padding:2px 4px; font-size:10px;" onclick="this.parentElement.remove(); updateAllCalculations();">x</button>
+                        <div class="set-percent">0%</div>
+                        <button class="btn-del" style="margin-top:3px;" onclick="this.parentElement.remove(); updateAllCalculations();">x</button>
                     `;
                     newSetsContainer.appendChild(setDiv);
                 });
@@ -314,43 +317,41 @@
         workoutDiv.id = `workout-${workoutId}`;
         
         workoutDiv.innerHTML = `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                <strong style="font-size: 16px; color: #34495e;">Тренировка ${container.children.length + 1}</strong>
-                <button class="btn-del" style="background:#95a5a6; font-size: 11px;" onclick="this.closest('.workout-block').remove(); updateAllCalculations();">Удалить тренировку</button>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <strong style="font-size: 13px; color: #34495e;">Тренировка ${container.children.length + 1}</strong>
+                <button class="btn-del" style="background:#95a5a6; font-size: 10px;" onclick="this.closest('.workout-block').remove(); updateAllCalculations();">Удалить тренировку</button>
             </div>
             <table class="main-table" id="table-${workoutId}">
                 <thead>
                     <tr>
                         <th width="80">УПР</th>
-                        <th width="80">ПМ</th>
+                        <th width="60">ПМ</th>
                         <th>Подходы (Вес х Подх х Повт)</th>
                         <th width="70">КПШ</th>
                         <th width="70">ОИ</th>
                         <th width="70">ОТ</th>
-                        <th width="150">Комментарий</th>
-                        <th width="50"></th>
+                        <th width="140">Комментарий</th>
+                        <th width="30"></th>
                     </tr>
                 </thead>
-                <tbody class="workout-tbody">
-                    <!-- Упражнения -->
-                </tbody>
+                <tbody class="workout-tbody"></tbody>
                 <tfoot>
                     <tr style="font-weight: bold; background-color: #f9f9f9;">
-                        <td colspan="3" style="text-align: right; padding-right: 10px; font-size: 13px;">Сумма за тренировку:</td>
-                        <td class="w-t-kpsh calc-cell">0</td>
-                        <td class="w-t-oi calc-cell">0</td>
-                        <td class="w-t-ot calc-cell">0</td>
+                        <td colspan="3" style="text-align: right; padding-right: 10px; font-size: 11px;">Сумма за тренировку:</td>
+                        <td class="w-t-kpsh calc-cell">0<span class="trend-container" id="trend-w-kpsh-${workoutId}"></span></td>
+                        <td class="w-t-oi calc-cell">0<span class="trend-container" id="trend-w-oi-${workoutId}"></span></td>
+                        <td class="w-t-ot calc-cell">0<span class="trend-container" id="trend-w-ot-${workoutId}"></span></td>
                         <td colspan="2"></td>
                     </tr>
                 </tfoot>
             </table>
-            <div style="margin-top: 10px;">
+            <div style="margin-top: 5px;">
                 <button class="btn-add-set" onclick="addExerciseRow(${workoutId})">+ Добавить упражнение</button>
             </div>
         `;
         
         container.appendChild(workoutDiv);
-        addExerciseRow(workoutId); // Сразу добавляем пустую строку
+        addExerciseRow(workoutId);
     }
 
     // --- УПРАВЛЕНИЕ УПРАЖНЕНИЯМИ ---
@@ -363,19 +364,17 @@
             <td><input type="text" class="input-ex ex-name" placeholder="Название" oninput="onExNameChange(${workoutId}, ${id})"></td>
             <td><input type="number" class="input-ex ex-pm" placeholder="ПМ" oninput="updateAllCalculations()"></td>
             <td>
-                <div class="scroll-sets" id="sets-container-${workoutId}-${id}">
-                    <!-- Подходы -->
-                </div>
-                <button class="btn-add-set" style="margin-top:5px; padding:2px 5px; font-size:10px;" onclick="addSet(${workoutId}, ${id})">+ Подход</button>
+                <div class="scroll-sets" id="sets-container-${workoutId}-${id}"></div>
+                <button class="btn-add-set" style="margin-top:3px;" onclick="addSet(${workoutId}, ${id})">+ Подход</button>
             </td>
-            <td class="calc-kpsh calc-cell">0</td>
-            <td class="calc-oi calc-cell">0</td>
-            <td class="calc-ot calc-cell">0</td>
-            <td><input type="text" class="input-ex comment ex-comment" placeholder="До отказа..."></td>
+            <td class="calc-kpsh calc-cell">0<span class="trend-container" id="trend-ex-kpsh-${workoutId}-${id}"></span></td>
+            <td class="calc-oi calc-cell">0<span class="trend-container" id="trend-ex-oi-${workoutId}-${id}"></span></td>
+            <td class="calc-ot calc-cell">0<span class="trend-container" id="trend-ex-ot-${workoutId}-${id}"></span></td>
+            <td><input type="text" class="input-ex comment ex-comment" placeholder="Комментарий..."></td>
             <td><button class="btn-del" onclick="this.closest('tr').remove(); updateAllCalculations();">x</button></td>
         `;
         tbody.appendChild(tr);
-        addSet(workoutId, id); // Сразу добавляем пустой подход
+        addSet(workoutId, id);
     }
 
     function onExNameChange(workoutId, id) {
@@ -395,7 +394,7 @@
     function addSet(workoutId, exId) {
         const container = document.getElementById(`sets-container-${workoutId}-${exId}`);
         const setDiv = document.createElement('div');
-        setDiv.className = 'set-block';
+        setDiv.className = 'set-block set-inactive';
         setDiv.innerHTML = `
             <div class="set-label">Вес</div>
             <input type="number" class="input-set set-weight" oninput="updateAllCalculations()">
@@ -403,8 +402,8 @@
             <input type="number" class="input-set set-sets" oninput="updateAllCalculations()">
             <div class="set-label">Повт</div>
             <input type="number" class="input-set set-reps" oninput="updateAllCalculations()">
-            <div class="set-percent p-inactive">0%</div>
-            <button class="btn-del" style="margin-top:6px; padding:2px 4px; font-size:10px;" onclick="this.parentElement.remove(); updateAllCalculations();">x</button>
+            <div class="set-percent">0%</div>
+            <button class="btn-del" style="margin-top:3px;" onclick="this.parentElement.remove(); updateAllCalculations();">x</button>
         `;
         container.appendChild(setDiv);
         updateAllCalculations();
@@ -412,88 +411,163 @@
 
     // --- ГЛОБАЛЬНАЯ МАТЕМАТИКА ---
     function updateAllCalculations() {
+        // Проходим по всем неделям
         document.querySelectorAll('.week-block').forEach(weekBlock => {
             let weekKpsh = 0;
             let weekOt = 0;
 
+            // Проходим по тренировкам
             weekBlock.querySelectorAll('.workout-block').forEach(workoutBlock => {
+                const workoutId = workoutBlock.id.split('-')[1];
                 let workoutKpsh = 0;
                 let workoutOt = 0;
 
+                // Проходим по упражнениям
                 workoutBlock.querySelectorAll('tbody tr').forEach(tr => {
                     const pm = parseFloat(tr.querySelector('.ex-pm').value) || 0;
                     let exKpsh = 0;
                     let exOt = 0;
 
+                    // Считаем подходы
                     tr.querySelectorAll('.set-block').forEach(setBlock => {
                         const weight = parseFloat(setBlock.querySelector('.set-weight').value) || 0;
                         const sets = parseFloat(setBlock.querySelector('.set-sets').value) || 0;
                         const reps = parseFloat(setBlock.querySelector('.set-reps').value) || 0;
-                        
                         const percentDisplay = setBlock.querySelector('.set-percent');
+                        
+                        setBlock.className = 'set-block set-inactive';
+                        percentDisplay.className = 'set-percent';
                         
                         if (pm > 0 && weight > 0 && sets > 0 && reps > 0) {
                             const percent = (weight / pm) * 100;
                             percentDisplay.textContent = Math.round(percent) + '%';
 
                             if (percent >= 50) {
-                                setBlock.classList.add('set-active');
+                                if (percent >= 95) setBlock.classList.add('set-black');
+                                else if (percent >= 85) setBlock.classList.add('set-red');
+                                else if (percent >= 70) setBlock.classList.add('set-yellow');
+                                else setBlock.classList.add('set-green');
+                                
                                 setBlock.classList.remove('set-inactive');
-                                percentDisplay.classList.add('p-active');
-                                percentDisplay.classList.remove('p-inactive');
-
                                 const totalReps = sets * reps;
                                 exKpsh += totalReps;
                                 exOt += (totalReps * percent);
-                            } else {
-                                setBlock.classList.add('set-inactive');
-                                setBlock.classList.remove('set-active');
-                                percentDisplay.classList.add('p-inactive');
-                                percentDisplay.classList.remove('p-active');
                             }
                         } else {
                             percentDisplay.textContent = '0%';
-                            setBlock.classList.remove('set-active');
-                            setBlock.classList.add('set-inactive');
-                            percentDisplay.classList.add('p-inactive');
-                            percentDisplay.classList.remove('p-active');
                         }
                     });
 
-                    let exOi = exKpsh > 0 ? (exOt / exKpsh) : 0;
-                    
-                    tr.querySelector('.calc-kpsh').textContent = exKpsh || 0;
-                    tr.querySelector('.calc-ot').textContent = exOt ? Math.round(exOt) : 0;
-                    tr.querySelector('.calc-oi').textContent = exOi ? exOi.toFixed(1) : 0;
+                    // Округляем значения упражнения
+                    const dispExKpsh = Math.round(exKpsh);
+                    const dispExOt = Math.round(exOt);
+                    const exOi = exKpsh > 0 ? (exOt / exKpsh) : 0;
+                    const dispExOi = parseFloat(exOi.toFixed(1));
+
+                    tr.querySelector('.calc-kpsh').innerHTML = `${dispExKpsh}<span class="trend-container" id="trend-ex-kpsh-${workoutId}-${tr.id.split('-')[2]}"></span>`;
+                    tr.querySelector('.calc-ot').innerHTML = `${dispExOt}<span class="trend-container" id="trend-ex-ot-${workoutId}-${tr.id.split('-')[2]}"></span>`;
+                    tr.querySelector('.calc-oi').innerHTML = `${dispExOi}<span class="trend-container" id="trend-ex-oi-${workoutId}-${tr.id.split('-')[2]}"></span>`;
+
+                    // Сравнение упражнения с родителем
+                    const parentExId = tr.dataset.parentExId;
+                    if (parentExId) {
+                        const parentTr = document.getElementById(`ex-${workoutBlock.dataset.parentWorkoutId}-${parentExId}`);
+                        if (parentTr) {
+                            const pKpsh = parseFloat(parentTr.querySelector('.calc-kpsh').textContent) || 0;
+                            const pOt = parseFloat(parentTr.querySelector('.calc-ot').textContent) || 0;
+                            const pOi = parseFloat(parentTr.querySelector('.calc-oi').textContent) || 0;
+                            
+                            setTrend(`trend-ex-kpsh-${workoutId}-${tr.id.split('-')[2]}`, dispExKpsh, pKpsh);
+                            setTrend(`trend-ex-ot-${workoutId}-${tr.id.split('-')[2]}`, dispExOt, pOt);
+                            setTrend(`trend-ex-oi-${workoutId}-${tr.id.split('-')[2]}`, dispExOi, pOi, true);
+                        }
+                    }
 
                     workoutKpsh += exKpsh;
                     workoutOt += exOt;
                 });
 
+                // Округляем значения тренировки
+                const dispWKpsh = Math.round(workoutKpsh);
+                const dispWOt = Math.round(workoutOt);
                 const workoutOi = workoutKpsh > 0 ? (workoutOt / workoutKpsh) : 0;
-                workoutBlock.querySelector('.w-t-kpsh').textContent = workoutKpsh || 0;
-                workoutBlock.querySelector('.w-t-ot').textContent = workoutOt ? Math.round(workoutOt) : 0;
-                workoutBlock.querySelector('.w-t-oi').textContent = workoutOi ? workoutOi.toFixed(1) : 0;
+                const dispWOi = parseFloat(workoutOi.toFixed(1));
+
+                workoutBlock.querySelector('.w-t-kpsh').innerHTML = `${dispWKpsh}<span class="trend-container" id="trend-w-kpsh-${workoutId}"></span>`;
+                workoutBlock.querySelector('.w-t-ot').innerHTML = `${dispWOt}<span class="trend-container" id="trend-w-ot-${workoutId}"></span>`;
+                workoutBlock.querySelector('.w-t-oi').innerHTML = `${dispWOi}<span class="trend-container" id="trend-w-oi-${workoutId}"></span>`;
+
+                // Сравнение тренировки с родителем
+                const parentWorkoutId = workoutBlock.dataset.parentWorkoutId;
+                if (parentWorkoutId) {
+                    const parentWorkout = document.getElementById(`workout-${parentWorkoutId}`);
+                    if (parentWorkout) {
+                        const pWKpsh = parseFloat(parentWorkout.querySelector('.w-t-kpsh').textContent) || 0;
+                        const pWOt = parseFloat(parentWorkout.querySelector('.w-t-ot').textContent) || 0;
+                        const pWOi = parseFloat(parentWorkout.querySelector('.w-t-oi').textContent) || 0;
+                        
+                        setTrend(`trend-w-kpsh-${workoutId}`, dispWKpsh, pWKpsh);
+                        setTrend(`trend-w-ot-${workoutId}`, dispWOt, pWOt);
+                        setTrend(`trend-w-oi-${workoutId}`, dispWOi, pWOi, true);
+                    }
+                }
 
                 weekKpsh += workoutKpsh;
                 weekOt += workoutOt;
             });
 
+            // Округляем значения недели
+            const dispKpsh = Math.round(weekKpsh);
+            const dispOt = Math.round(weekOt);
             const weekOi = weekKpsh > 0 ? (weekOt / weekKpsh) : 0;
-            weekBlock.querySelector('.w-kpsh').textContent = weekKpsh || 0;
-            weekBlock.querySelector('.w-ot').textContent = weekOt ? Math.round(weekOt) : 0;
-            weekBlock.querySelector('.w-oi').textContent = weekOi ? weekOi.toFixed(1) : 0;
+            const dispOi = parseFloat(weekOi.toFixed(1));
+
+            weekBlock.querySelector('.w-kpsh').innerHTML = `${dispKpsh}<span class="trend-container" id="trend-kpsh-${weekBlock.id.split('-')[1]}"></span>`;
+            weekBlock.querySelector('.w-ot').innerHTML = `${dispOt}<span class="trend-container" id="trend-ot-${weekBlock.id.split('-')[1]}"></span>`;
+            weekBlock.querySelector('.w-oi').innerHTML = `${dispOi}<span class="trend-container" id="trend-oi-${weekBlock.id.split('-')[1]}"></span>`;
+
+            // Сравнение недели с родителем
+            const parentId = weekBlock.dataset.parentId;
+            if (parentId) {
+                const parentBlock = document.getElementById(`week-${parentId}`);
+                if (parentBlock) {
+                    const pKpsh = parseFloat(parentBlock.querySelector('.w-kpsh').textContent) || 0;
+                    const pOt = parseFloat(parentBlock.querySelector('.w-ot').textContent) || 0;
+                    const pOi = parseFloat(parentBlock.querySelector('.w-oi').textContent) || 0;
+
+                    setTrend(`trend-kpsh-${weekBlock.id.split('-')[1]}`, dispKpsh, pKpsh);
+                    setTrend(`trend-ot-${weekBlock.id.split('-')[1]}`, dispOt, pOt);
+                    setTrend(`trend-oi-${weekBlock.id.split('-')[1]}`, dispOi, pOi, true);
+                }
+            }
         });
+    }
+
+    function setTrend(elementId, current, parent, isOi = false) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        
+        const diff = current - parent;
+        
+        if (Math.abs(diff) < 0.1) {
+            el.innerHTML = '';
+            return;
+        }
+
+        const isUp = diff > 0;
+        const colorClass = isUp ? 'trend-up' : 'trend-down';
+        const arrow = isUp ? '▲' : '▼';
+        const sign = isUp ? '+' : '';
+        const diffText = isOi ? diff.toFixed(1) : Math.round(diff);
+
+        el.innerHTML = `<span class="trend-indicator ${colorClass}" title="Разница: ${sign}${diffText}">${arrow}</span>`;
     }
 
     // Инициализация
     window.onload = () => {
-        // Добавляем 3 пустые строки в ПМ для удобства
         addPmRow();
         addPmRow();
         addPmRow();
-        
-        // Создаем первую неделю
         addNewWeek();
     };
 </script>

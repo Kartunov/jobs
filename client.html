@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Программы спортсмена</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .client-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .programs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        
+        .program-card { position: relative; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e1e4e6; cursor: pointer; transition: 0.2s; text-decoration: none; color: inherit; display: block; }
+        .program-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-color: #3498db; }
+        
+        .program-icon { font-size: 30px; margin-bottom: 10px; }
+        .program-title { font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
+        .program-date { font-size: 12px; color: #7f8c8d; }
+
+        .btn-delete-prog { position: absolute; top: 10px; right: 10px; background: #ffeaea; color: #e74c3c; border: none; width: 24px; height: 24px; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;}
+        .btn-delete-prog:hover { background: #e74c3c; color: white; }
+
+        .empty-state { text-align: center; padding: 40px; background: white; border-radius: 8px; border: 2px dashed #ccc; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+
+<div class="top-nav">
+    <a href="index.html" class="btn-link" style="padding: 5px 10px; border-radius: 4px;">← Назад к спортсменам</a>
+    <span style="font-weight: bold; color: #2c3e50;" id="client-name-title">Загрузка...</span>
+    <button class="btn-add" id="add-program-btn" style="display: none;">+ Создать программу</button>
+</div>
+
+<div class="client-container">
+    <h2 style="color: #2c3e50; font-size: 18px; margin-bottom: 15px;">Тренировочные программы</h2>
+    <div id="programs-container" class="programs-grid">
+        <!-- Сюда загрузятся программы -->
+    </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, getDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCU418F9p5qxpEFIeHGNSQD17z155Tqtf8",
+    authDomain: "jobs-38388.firebaseapp.com",
+    projectId: "jobs-38388",
+    storageBucket: "jobs-38388.firebasestorage.app",
+    messagingSenderId: "70186867403",
+    appId: "1:70186867403:web:cf5d3fc9580eb03c14194e",
+    measurementId: "G-CEC7XCNZ1K"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const clientId = urlParams.get('id');
+
+  const titleEl = document.getElementById('client-name-title');
+  const programsContainer = document.getElementById('programs-container');
+  const addProgramBtn = document.getElementById('add-program-btn');
+
+  let currentUser = null;
+
+  if (!clientId) {
+    document.body.innerHTML = '<h1 style="text-align:center; margin-top:50px;">Ошибка: Клиент не выбран.</h1><div style="text-align:center; margin-top:20px;"><a href="index.html">Вернуться на главную</a></div>';
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = user;
+      await loadClientInfo();
+      loadPrograms();
+      addProgramBtn.style.display = 'block';
+    } else {
+      window.location.href = 'index.html'; // Если не вошел, кидаем на главную
+    }
+  });
+
+  async function loadClientInfo() {
+    try {
+      const docRef = doc(db, "users", currentUser.uid, "clients", clientId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        titleEl.textContent = docSnap.data().name;
+      } else {
+        titleEl.textContent = "Клиент не найден";
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function loadPrograms() {
+    programsContainer.innerHTML = '<div style="padding: 20px; color: #7f8c8d;">Загрузка программ...</div>';
+    try {
+      const progsRef = collection(db, "users", currentUser.uid, "clients", clientId, "programs");
+      const querySnapshot = await getDocs(progsRef);
+      
+      if (querySnapshot.empty) {
+        programsContainer.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;">У этого спортсмена пока нет программ.</div>`;
+        return;
+      }
+
+      let html = '';
+      querySnapshot.forEach((docSnap) => {
+        const prog = docSnap.data();
+        // Форматируем дату, если она есть
+        let dateStr = '';
+        if (prog.createdAt) {
+            const d = prog.createdAt.toDate();
+            dateStr = d.toLocaleDateString('ru-RU');
+        }
+
+        html += `
+          <a href="table.html?clientId=${clientId}&programId=${docSnap.id}" class="program-card">
+            <button class="btn-delete-prog" onclick="deleteProgram('${docSnap.id}', event)" title="Удалить программу">✕</button>
+            <div class="program-icon">📋</div>
+            <div class="program-title">${prog.title || 'Без названия'}</div>
+            <div class="program-date">Создана: ${dateStr}</div>
+          </a>
+        `;
+      });
+      programsContainer.innerHTML = html;
+
+      window.deleteProgram = async (progId, event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (confirm('Удалить эту программу? Восстановить будет невозможно.')) {
+          await deleteDoc(doc(db, "users", currentUser.uid, "clients", clientId, "programs", progId));
+          loadPrograms();
+        }
+      };
+
+    } catch (e) {
+      console.error("Ошибка загрузки программ: ", e);
+      programsContainer.innerHTML = '<div style="color: red;">Ошибка загрузки программ.</div>';
+    }
+  }
+
+  addProgramBtn.addEventListener('click', async () => {
+    const progTitle = prompt("Введите название программы (например, 'Апрель - Базовый мезоцикл'):", "Новая программа");
+    if (progTitle !== null && progTitle.trim() !== '') {
+      try {
+        // Создаем пустой документ программы в базе
+        const docRef = await addDoc(collection(db, "users", currentUser.uid, "clients", clientId, "programs"), {
+          title: progTitle.trim(),
+          createdAt: new Date(),
+          data: {} // Пока пустые данные
+        });
+        // Сразу перекидываем в редактор, передавая ID клиента и ID программы
+        window.location.href = `table.html?clientId=${clientId}&programId=${docRef.id}`;
+      } catch (e) {
+        console.error("Ошибка создания программы: ", e);
+        alert("Не удалось создать программу.");
+      }
+    }
+  });
+</script>
+
+</body>
+</html>

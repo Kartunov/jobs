@@ -29,6 +29,10 @@
         .bg-color-2 { background-color: #f0f9e8; }
         .bg-color-3 { background-color: #f4e8f9; }
         .bg-color-4 { background-color: #f9e8e8; }
+
+        /* Кнопка очистки */
+        .btn-clear { background-color: #e74c3c; color: white; font-size: 12px; padding: 6px 12px; border-radius: 4px; font-weight: bold; }
+        .btn-clear:hover { background-color: #c0392b; }
     </style>
 </head>
 <body>
@@ -37,7 +41,11 @@
 <div class="top-nav">
     <a href="index.html" class="btn-link" style="padding: 5px 10px; border-radius: 4px;">← Назад в библиотеку</a>
     <span style="font-weight: bold; color: #2c3e50;">Конструктор программы</span>
-    <div style="width: 120px;"></div> 
+    
+    <!-- Кнопка очистки в правом верхнем углу -->
+    <div>
+        <button class="btn-clear" onclick="clearAllData()">🗑 Очистить всё</button>
+    </div>
 </div>
 
 <div class="layout">
@@ -67,11 +75,8 @@
             
             <table class="timeline-table" id="timelineTable">
                 <tbody>
-                    <!-- Строка с названиями -->
                     <tr id="timelineNamesRow"></tr>
-                    <!-- Строка с уточнениями (недели/даты) -->
                     <tr id="timelineSubRow"></tr>
-                    <!-- Строка с описанием -->
                     <tr id="timelineDescRow"></tr>
                 </tbody>
             </table>
@@ -99,7 +104,176 @@
     let globalExCounter = 0;
     let globalPeriodCounter = 0;
 
-    // --- УПРАВЛЕНИЕ ПМ ---
+    // ==========================================
+    // СИСТЕМА АВТОСОХРАНЕНИЯ
+    // ==========================================
+    
+    // Функция сохранения состояния
+    function saveState() {
+        const state = {
+            cycles: [],
+            periods: []
+        };
+
+        // 1. Собираем ПМ
+        const pmData = [];
+        document.querySelectorAll('#pmTbody tr').forEach(tr => {
+            pmData.push({
+                name: tr.querySelector('.pm-name').value,
+                val: tr.querySelector('.pm-val').value
+            });
+        });
+        state.pm = pmData;
+
+        // 2. Собираем Периоды
+        const timelineNames = document.getElementById('timelineNamesRow');
+        if (timelineNames.children.length > 0 && !timelineNames.children[0].classList.contains('empty-placeholder')) {
+            for (let i = 0; i < timelineNames.children.length; i++) {
+                state.periods.push({
+                    name: timelineNames.children[i].querySelector('input').value,
+                    sub: document.getElementById('timelineSubRow').children[i].querySelector('input').value,
+                    desc: document.getElementById('timelineDescRow').children[i].querySelector('textarea').value
+                });
+            }
+        }
+
+        // 3. Собираем Циклы
+        document.querySelectorAll('.cycle-block').forEach(cycle => {
+            const cycleData = {
+                title: cycle.querySelector('.cycle-title-input').value,
+                weeks: []
+            };
+
+            cycle.querySelectorAll('.week-block').forEach(week => {
+                const weekData = {
+                    title: week.querySelector('.week-name-input').value,
+                    workouts: []
+                };
+
+                week.querySelectorAll('.workout-block').forEach(workout => {
+                    const workoutData = {
+                        title: workout.querySelector('.workout-title-input').value,
+                        exercises: []
+                    };
+
+                    workout.querySelectorAll('.workout-tbody tr').forEach(tr => {
+                        const exData = {
+                            name: tr.querySelector('.ex-name').value,
+                            pm: tr.querySelector('.ex-pm').value,
+                            comment: tr.querySelector('.ex-comment') ? tr.querySelector('.ex-comment').value : '',
+                            sets: []
+                        };
+
+                        tr.querySelectorAll('.set-block').forEach(set => {
+                            exData.sets.push({
+                                weight: set.querySelector('.set-weight').value,
+                                sets: set.querySelector('.set-sets').value,
+                                reps: set.querySelector('.set-reps').value
+                            });
+                        });
+                        workoutData.exercises.push(exData);
+                    });
+                    weekData.workouts.push(workoutData);
+                });
+                cycleData.weeks.push(weekData);
+            });
+            state.cycles.push(cycleData);
+        });
+
+        // Записываем в LocalStorage
+        localStorage.setItem('trainerAppState', JSON.stringify(state));
+    }
+
+    // Функция восстановления
+    function loadState() {
+        const saved = localStorage.getItem('trainerAppState');
+        if (!saved) return false;
+
+        const state = JSON.parse(saved);
+
+        // 1. Восстанавливаем ПМ
+        if (state.pm) {
+            state.pm.forEach(pm => {
+                addPmRow(pm.name, pm.val);
+            });
+        }
+
+        // 2. Восстанавливаем Периоды
+        if (state.periods) {
+            state.periods.forEach(p => {
+                addPeriodColumn(p.name, p.sub, p.desc);
+            });
+        }
+
+        // 3. Восстанавливаем Циклы
+        if (state.cycles) {
+            state.cycles.forEach(cycle => {
+                // Создаем цикл
+                const cycleId = addNewCycle();
+                const cycleBlock = document.getElementById(`cycle-${cycleId}`);
+                cycleBlock.querySelector('.cycle-title-input').value = cycle.title;
+                
+                const weeksContainer = document.getElementById(`weeks-container-${cycleId}`);
+                weeksContainer.innerHTML = ''; // Очищаем дефолтную неделю
+
+                cycle.weeks.forEach(week => {
+                    const weekId = addNewWeek(cycleId);
+                    const weekBlock = document.getElementById(`week-${weekId}`);
+                    weekBlock.querySelector('.week-name-input').value = week.title;
+                    
+                    const workoutsContainer = document.getElementById(`workouts-container-${weekId}`);
+                    workoutsContainer.innerHTML = ''; // Очищаем дефолтную тренировку
+
+                    week.workouts.forEach(workout => {
+                        const workoutId = addWorkoutToWeek(weekId);
+                        const workoutBlock = document.getElementById(`workout-${workoutId}`);
+                        workoutBlock.querySelector('.workout-title-input').value = workout.title;
+                        
+                        const tbody = workoutBlock.querySelector('.workout-tbody');
+                        tbody.innerHTML = ''; // Очищаем дефолтное упражнение
+
+                        workout.exercises.forEach(ex => {
+                            const exId = addExerciseRow(workoutId);
+                            const tr = document.getElementById(`ex-${workoutId}-${exId}`);
+                            
+                            tr.querySelector('.ex-name').value = ex.name;
+                            tr.querySelector('.ex-pm').value = ex.pm;
+                            if (tr.querySelector('.ex-comment')) tr.querySelector('.ex-comment').value = ex.comment;
+                            
+                            const setsContainer = tr.querySelector('.scroll-sets');
+                            setsContainer.innerHTML = ''; // Очищаем дефолтный подход
+                            
+                            ex.sets.forEach(set => {
+                                addSet(workoutId, exId, set.weight, set.sets, set.reps);
+                            });
+                        });
+                    });
+                });
+            });
+        }
+        updateAllCalculations();
+        return true;
+    }
+
+    // Очистка всего
+    function clearAllData() {
+        if(confirm('Вы уверены, что хотите полностью очистить страницу? Все данные будут удалены.')) {
+            localStorage.removeItem('trainerAppState');
+            location.reload(); // Перезагружаем страницу (она загрузится пустой)
+        }
+    }
+
+    // Привязка автосохранения к вводу
+    document.addEventListener('input', saveState);
+    document.addEventListener('click', () => {
+        // Задержка нужна, чтобы состояние успело обновиться после кликов (удаление, добавление)
+        setTimeout(saveState, 50); 
+    });
+
+    // ==========================================
+    // БАЗОВЫЕ ФУНКЦИИ (ПМ, ПЕРИОДЫ И Т.Д.)
+    // ==========================================
+
     function addPmRow(name = '', val = '') {
         const tbody = document.querySelector('#pmTbody');
         const tr = document.createElement('tr');
@@ -127,50 +301,40 @@
         return pmData;
     }
 
-    // --- УПРАВЛЕНИЕ ТАЙМЛАЙНОМ (ПЕРИОДЫ) ---
-    function addPeriodColumn() {
+    function addPeriodColumn(name = 'Период', sub = '', desc = '') {
         const id = globalPeriodCounter++;
         const bgClass = `bg-color-${id % 5}`;
 
-        // Убираем заглушку "Нет добавленных периодов", если она есть
         removeTimelinePlaceholder();
 
-        // 1. Название
         const nameTd = document.createElement('td');
         nameTd.className = bgClass;
         nameTd.style.position = 'relative';
         nameTd.innerHTML = `
             <button class="timeline-del-btn" onclick="deletePeriod(this)" title="Удалить период">×</button>
-            <input type="text" class="timeline-name-input" value="Период ${id + 1}" placeholder="Название">
+            <input type="text" class="timeline-name-input" value="${name}" placeholder="Название">
         `;
         document.getElementById('timelineNamesRow').appendChild(nameTd);
 
-        // 2. Подзаголовок
         const subTd = document.createElement('td');
         subTd.className = bgClass;
-        subTd.innerHTML = `<input type="text" class="timeline-sub-input" placeholder="Напр: 5 недель">`;
+        subTd.innerHTML = `<input type="text" class="timeline-sub-input" value="${sub}" placeholder="Напр: 5 недель">`;
         document.getElementById('timelineSubRow').appendChild(subTd);
 
-        // 3. Описание
         const descTd = document.createElement('td');
         descTd.className = bgClass;
-        descTd.innerHTML = `<textarea class="timeline-desc-input" placeholder="Описание..."></textarea>`;
+        descTd.innerHTML = `<textarea class="timeline-desc-input" placeholder="Описание...">${desc}</textarea>`;
         document.getElementById('timelineDescRow').appendChild(descTd);
     }
 
-    // ПРАВИЛЬНОЕ УДАЛЕНИЕ ПЕРИОДА
     function deletePeriod(btn) {
-        // 1. Находим ячейку, в которой лежит кнопка
         const td = btn.closest('td');
-        // 2. Находим её порядковый номер (индекс)
         const index = Array.from(td.parentNode.children).indexOf(td);
         
-        // 3. Удаляем ячейку с этим же индексом из всех трёх строк
         document.getElementById('timelineNamesRow').children[index].remove();
         document.getElementById('timelineSubRow').children[index].remove();
         document.getElementById('timelineDescRow').children[index].remove();
 
-        // 4. Если удалили всё, возвращаем заглушку
         if (document.getElementById('timelineNamesRow').children.length === 0) {
             showTimelinePlaceholder();
         }
@@ -191,7 +355,6 @@
         document.getElementById('timelineDescRow').innerHTML = '<td style="border:none;"></td>';
     }
 
-    // --- УПРАВЛЕНИЕ ЦИКЛАМИ ---
     function addNewCycle(isCopy = false) {
         const cycleId = globalCycleCounter++;
         const container = document.getElementById('cyclesContainer');
@@ -222,8 +385,7 @@
         if (!isCopy) {
             addNewWeek(cycleId);
         }
-        
-        cycleBlock.scrollIntoView({ behavior: 'smooth' });
+        return cycleId; // ВАЖНО: возвращаем ID для восстановления
     }
 
     function toggleCycle(cycleId) {
@@ -393,7 +555,6 @@
         updateAllCalculations();
     }
 
-    // --- УПРАВЛЕНИЕ НЕДЕЛЯМИ ---
     function addNewWeek(cycleId, sourceWeekId = null) {
         const weekId = globalWeekCounter++;
         const container = document.getElementById(`weeks-container-${cycleId}`);
@@ -436,6 +597,7 @@
         
         weekBlock.scrollIntoView({ behavior: 'smooth' });
         updateAllCalculations();
+        return weekId; // ВАЖНО: возвращаем ID
     }
 
     function deleteWeek(weekId) {
@@ -573,7 +735,6 @@
         updateAllCalculations();
     }
 
-    // --- УПРАВЛЕНИЕ ТРЕНИРОВКАМИ ВНУТРИ НЕДЕЛИ ---
     function addWorkoutToWeek(weekId) {
         const workoutId = globalWorkoutCounter++;
         const container = document.getElementById(`workouts-container-${weekId}`);
@@ -618,9 +779,9 @@
         
         container.appendChild(workoutDiv);
         addExerciseRow(workoutId);
+        return workoutId; // ВАЖНО: возвращаем ID
     }
 
-    // --- УПРАВЛЕНИЕ УПРАЖНЕНИЯМИ ---
     function addExerciseRow(workoutId) {
         const id = globalExCounter++;
         const tbody = document.querySelector(`#table-${workoutId} .workout-tbody`);
@@ -641,6 +802,7 @@
         `;
         tbody.appendChild(tr);
         addSet(workoutId, id);
+        return id; // ВАЖНО: возвращаем ID
     }
 
     function onExNameChange(workoutId, id) {
@@ -656,24 +818,23 @@
         updateAllCalculations();
     }
 
-    // --- УПРАВЛЕНИЕ ПОДХОДАМИ ---
-    function addSet(workoutId, exId) {
+    function addSet(workoutId, exId, weightVal = '', setsVal = '', repsVal = '') {
         const container = document.getElementById(`sets-container-${workoutId}-${exId}`);
         const setDiv = document.createElement('div');
         setDiv.className = 'set-block set-inactive';
         setDiv.innerHTML = `
             <div class="set-col" style="width:100%;">
                 <div class="set-label">Вес</div>
-                <input type="number" class="input-set set-weight" oninput="updateAllCalculations()">
+                <input type="number" class="input-set set-weight" value="${weightVal}" oninput="updateAllCalculations()">
             </div>
             <div class="set-row">
                 <div class="set-col">
                     <div class="set-label">Подх</div>
-                    <input type="number" class="input-set set-sets" oninput="updateAllCalculations()">
+                    <input type="number" class="input-set set-sets" value="${setsVal}" oninput="updateAllCalculations()">
                 </div>
                 <div class="set-col">
                     <div class="set-label">Повт</div>
-                    <input type="number" class="input-set set-reps" oninput="updateAllCalculations()">
+                    <input type="number" class="input-set set-reps" value="${repsVal}" oninput="updateAllCalculations()">
                 </div>
             </div>
             <div class="set-percent">0%</div>
@@ -827,11 +988,19 @@
         el.innerHTML = `<span class="trend-indicator ${colorClass}" title="Разница: ${sign}${diffText}">${arrow}</span>`;
     }
 
-    // Инициализация
+    // ==========================================
+    // ИНИЦИАЛИЗАЦИЯ
+    // ==========================================
     window.onload = () => {
-        addPmRow(); addPmRow(); addPmRow();
-        showTimelinePlaceholder();
-        addNewCycle();
+        // Пытаемся загрузить сохраненное состояние
+        const isLoaded = loadState();
+        
+        // Если ничего не было сохранено (первый запуск) — создаем пустой шаблон
+        if (!isLoaded) {
+            addPmRow(); addPmRow(); addPmRow();
+            showTimelinePlaceholder();
+            addNewCycle();
+        }
     };
 </script>
 </body>

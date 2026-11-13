@@ -7,10 +7,9 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Фикс вылета за экран */
-        body { overflow-x: hidden; }
+        /* Глобальный фикс от вылета */
+        html, body { max-width: 100vw; overflow-x: hidden; }
         
-        /* Стили для таймлайна */
         .timeline-section { background: white; padding: 10px; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); margin-bottom: 10px; overflow-x: auto; }
         .timeline-table { border-collapse: collapse; width: 100%; min-width: 500px; table-layout: fixed;}
         .timeline-table td, .timeline-table th { border: 1px solid #ccc; padding: 4px; text-align: center; vertical-align: top; }
@@ -44,16 +43,18 @@
 
         .save-status { font-size: 12px; color: #27ae60; margin-right: 15px; display: none;}
 
-        /* ====== СТИЛИ ДЛЯ ГРАФИКОВ (АДАПТИВНОСТЬ) ====== */
+        /* ====== СТИЛИ ДЛЯ ГРАФИКОВ ====== */
         .layout { display: flex; gap: 20px; max-width: 1600px; margin: 0 auto; height: 95vh; width: 100%; overflow: hidden; }
         .left-panel { flex: 0 0 60%; overflow-y: auto; padding-right: 10px; }
-        .right-panel { flex: 1; min-width: 0; /* Важно для Flexbox, чтобы контент не распирал */ display: flex; justify-content: center; align-items: flex-start; padding: 0 10px; border: none; background: transparent; overflow-y: auto;}
+        .right-panel { flex: 1; min-width: 0; display: flex; justify-content: center; align-items: flex-start; padding: 0 10px; border: none; background: transparent; overflow-y: auto; overflow-x: hidden;}
         
         .charts-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 15px; }
         
         .chart-block { background: white; border-radius: 6px; border: 1px solid #e1e4e6; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.02);}
         .chart-header { background: #f8f9fa; padding: 10px 15px; font-weight: bold; color: #2c3e50; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; font-size: 13px;}
         .chart-header:hover { background: #ecf0f1; }
+        
+        /* По умолчанию графики скрыты */
         .chart-body { padding: 15px; display: none; }
         .chart-body.active { display: block; }
         
@@ -75,19 +76,14 @@
         .trend-down { color: #c0392b; }
 
         /* ====== ОБНОВЛЕННЫЕ ЦВЕТА ====== */
-        /* 50-59 ЗЕЛЕНЫЙ */
         .set-green { border-color: #2ecc71; background-color: #f0fdf4; }
         .set-green .set-percent { color: #27ae60; background: #d4f5e2; }
-        /* 60-69 ЖЕЛТЫЙ */
         .set-yellow { border-color: #f1c40f; background-color: #fffdf0; }
         .set-yellow .set-percent { color: #d35400; background: #fcf3cf; }
-        /* 70-79 ОРАНЖЕВЫЙ */
         .set-orange { border-color: #e67e22; background-color: #fff5ec; }
         .set-orange .set-percent { color: #e67e22; background: #fdebd0; }
-        /* 80-89 КРАСНЫЙ */
         .set-red { border-color: #e74c3c; background-color: #fdf2f1; }
         .set-red .set-percent { color: #c0392b; background: #fadbd8; }
-        /* 90+ ЧЕРНЫЙ */
         .set-black { border-color: #2c3e50; background-color: #f4f6f7; }
         .set-black .set-percent { color: #fff; background: #2c3e50; }
 
@@ -135,12 +131,13 @@
     <div class="right-panel">
         <div class="charts-container">
             
+            <!-- ГРАФИК 1: Свернут по умолчанию -->
             <div class="chart-block">
                 <div class="chart-header" onclick="toggleChart('chart-ex-body', this)">
                     <span>🏋️‍♂️ Динамика упражнения</span>
-                    <span class="collapse-icon">▼</span>
+                    <span class="collapse-icon">►</span>
                 </div>
-                <div class="chart-body active" id="chart-ex-body">
+                <div class="chart-body" id="chart-ex-body">
                     <select class="chart-select" id="ex-chart-select" onchange="renderCharts()">
                         <option value="">Выберите упражнение из ПМ...</option>
                     </select>
@@ -160,12 +157,13 @@
                 </div>
             </div>
 
+            <!-- ГРАФИК 2: Свернут по умолчанию -->
             <div class="chart-block">
                 <div class="chart-header" onclick="toggleChart('chart-workout-body', this)">
                     <span>📊 Сумма за тренировку</span>
-                    <span class="collapse-icon">▼</span>
+                    <span class="collapse-icon">►</span>
                 </div>
-                <div class="chart-body active" id="chart-workout-body">
+                <div class="chart-body" id="chart-workout-body">
                     <div class="chart-controls">
                         <div class="metric-toggles" id="wo-metric-toggles">
                             <button class="metric-btn active" data-metric="kpsh">КПШ</button>
@@ -182,12 +180,13 @@
                 </div>
             </div>
 
+            <!-- ГРАФИК 3: Свернут по умолчанию -->
             <div class="chart-block">
                 <div class="chart-header" onclick="toggleChart('chart-week-body', this)">
                     <span>📅 Сумма за неделю</span>
-                    <span class="collapse-icon">▼</span>
+                    <span class="collapse-icon">►</span>
                 </div>
-                <div class="chart-body active" id="chart-week-body">
+                <div class="chart-body" id="chart-week-body">
                     <div class="chart-controls">
                         <div class="metric-toggles" id="week-metric-toggles">
                             <button class="metric-btn active" data-metric="kpsh">КПШ</button>
@@ -573,7 +572,7 @@
         const container = document.getElementById(`weeks-container-${cycleId}`);
         const div = document.createElement('div');
         div.className = 'week-block'; div.id = `week-${weekId}`;
-        div.dataset.parentId = sourceWeekId !== null ? sourceWeekId : ''; // ВАЖНО: сохраняем ID родителя
+        div.dataset.parentId = sourceWeekId !== null ? sourceWeekId : '';
         
         div.innerHTML = `
             <div class="week-header">
@@ -712,7 +711,6 @@
         updateAllCalculations();
     }
 
-    // ФУНКЦИЯ ТРЕНДОВ
     function setTrend(elementId, current, parent, isOi = false) {
         const el = document.getElementById(elementId);
         if (!el) return;
@@ -749,7 +747,6 @@
                             const percent = (w / pm) * 100;
                             pDisp.textContent = Math.round(percent) + '%';
                             
-                            // НОВЫЕ ЦВЕТА
                             if (percent >= 90) setBlock.classList.add('set-black');
                             else if (percent >= 80) setBlock.classList.add('set-red');
                             else if (percent >= 70) setBlock.classList.add('set-orange');
@@ -946,10 +943,7 @@
 
     function getCommonOptions(lines = [], showLegend = true) {
         return {
-            responsive: true, 
-            maintainAspectRatio: false, 
-            spanGaps: true, 
-            interaction: { mode: 'index', intersect: false },
+            responsive: true, maintainAspectRatio: false, spanGaps: true, interaction: { mode: 'index', intersect: false },
             plugins: { legend: { display: showLegend, position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }, verticalLine: { lines: lines } },
             scales: { x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 8, font: { size: 10 } } }, y: { beginAtZero: true, suggestedMax: 10, ticks: { font: { size: 10 } } } },
             elements: { line: { tension: 0.3, borderWidth: 2 }, point: { radius: 4, hoverRadius: 7 } }

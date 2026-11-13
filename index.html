@@ -13,12 +13,16 @@
         .btn-logout:hover { background: #c0392b; }
         
         /* Стили для клиентов */
-        .client-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e1e4e6; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s; text-decoration: none; color: inherit; }
+        .client-card { position: relative; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e1e4e6; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s; text-decoration: none; color: inherit; }
         .client-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-color: #3498db; }
-        .client-avatar { width: 50px; height: 50px; border-radius: 50%; background: #ecf0f1; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #7f8c8d; }
+        .client-avatar { width: 50px; height: 50px; border-radius: 50%; background: #ecf0f1; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #7f8c8d; flex-shrink: 0;}
         .client-info h3 { margin: 0 0 5px 0; color: #2c3e50; }
         .client-info p { margin: 0; color: #7f8c8d; font-size: 13px; }
         
+        /* Кнопка удаления клиента */
+        .btn-delete-client { position: absolute; top: 10px; right: 10px; background: #ffeaea; color: #e74c3c; border: none; width: 24px; height: 24px; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;}
+        .btn-delete-client:hover { background: #e74c3c; color: white; }
+
         .empty-state { text-align: center; padding: 40px; background: white; border-radius: 8px; border: 2px dashed #ccc; color: #7f8c8d; }
     </style>
 </head>
@@ -33,7 +37,6 @@
         </div>
     </div>
 
-    <!-- БЛОК: СПОРТСМЕНЫ -->
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 30px;">
         <h2 style="color: #2c3e50; font-size: 18px; margin: 0;">Мои спортсмены</h2>
         <button class="btn-add" id="add-client-btn" style="display: none;">+ Добавить клиента</button>
@@ -43,7 +46,6 @@
         <!-- Сюда загрузятся клиенты -->
     </div>
 
-    <!-- БЛОК: ИНСТРУМЕНТЫ -->
     <h2 style="color: #2c3e50; font-size: 18px; margin-top: 40px; margin-bottom: 15px;">Инструменты</h2>
     <div class="folders-grid">
         <a href="library.html" class="folder-card" style="text-decoration: none;">
@@ -51,8 +53,6 @@
             <div class="folder-name">Справочник упражнений</div>
             <div class="folder-stats">База упражнений по группам мышц</div>
         </a>
-
-        <!-- Редактор пока без привязки к клиенту (черновик) -->
         <a href="table.html" class="folder-card" style="text-decoration: none;">
             <div class="folder-icon">📝</div>
             <div class="folder-name">Редактор (Черновик)</div>
@@ -64,7 +64,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCU418F9p5qxpEFIeHGNSQD17z155Tqtf8",
@@ -87,7 +87,6 @@
 
   let currentUser = null;
 
-  // Функция обновления интерфейса
   function updateUI(user) {
     currentUser = user;
     if (user) {
@@ -99,9 +98,8 @@
         </div>
       `;
       document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
-      
       addClientBtn.style.display = 'block';
-      loadClients(user.uid); // Загружаем клиентов
+      loadClients(user.uid);
     } else {
       authContainer.innerHTML = `<button class="btn-add" id="login-btn">Войти через Google</button>`;
       document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, provider));
@@ -110,7 +108,6 @@
     }
   }
 
-  // Загрузка клиентов из Firestore
   async function loadClients(uid) {
     clientsContainer.innerHTML = '<div style="padding: 20px; color: #7f8c8d;">Загрузка клиентов...</div>';
     try {
@@ -123,23 +120,39 @@
       }
 
       let html = '';
-      querySnapshot.forEach((doc) => {
-        const client = doc.data();
-        // Берем первую букву имени для аватарки
+      querySnapshot.forEach((docSnap) => {
+        const client = docSnap.data();
         const initial = client.name ? client.name.charAt(0).toUpperCase() : '?';
         
-        // Ссылка ведет на новую страницу client.html с ID клиента в параметрах
+        // Добавляем кнопку удаления с preventDefault, чтобы не срабатывал переход по ссылке
         html += `
-          <a href="client.html?id=${doc.id}" class="client-card">
+          <a href="client.html?id=${docSnap.id}" class="client-card">
+            <button class="btn-delete-client" onclick="deleteClient('${docSnap.id}', event)" title="Удалить клиента">✕</button>
             <div class="client-avatar">${initial}</div>
             <div class="client-info">
               <h3>${client.name}</h3>
-              <p>Нажмите, чтобы открыть программы</p>
+              <p>Открыть программы</p>
             </div>
           </a>
         `;
       });
       clientsContainer.innerHTML = html;
+
+      // Делаем функцию deleteClient глобальной, чтобы onclick в HTML её видел
+      window.deleteClient = async (clientId, event) => {
+        event.preventDefault(); // Отменяем переход по ссылке
+        event.stopPropagation(); // Останавливаем всплытие клика
+        
+        if (confirm('Вы уверены, что хотите удалить этого клиента и ВСЕ его программы?')) {
+          try {
+            await deleteDoc(doc(db, "users", uid, "clients", clientId));
+            loadClients(uid);
+          } catch (e) {
+            console.error("Ошибка удаления: ", e);
+            alert("Ошибка при удалении клиента.");
+          }
+        }
+      };
 
     } catch (e) {
       console.error("Ошибка загрузки клиентов: ", e);
@@ -147,7 +160,6 @@
     }
   }
 
-  // Добавление клиента
   addClientBtn.addEventListener('click', async () => {
     if (!currentUser) return;
     const name = prompt("Введите имя нового спортсмена:");
@@ -157,7 +169,7 @@
           name: name.trim(),
           createdAt: new Date()
         });
-        loadClients(currentUser.uid); // Перезагружаем список
+        loadClients(currentUser.uid);
       } catch (e) {
         console.error("Ошибка добавления: ", e);
         alert("Не удалось добавить клиента.");

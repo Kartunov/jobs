@@ -16,20 +16,28 @@
         .pm-table input { width: 60px; border: none; text-align: center; font-size: 12px; outline: none; }
         
         /* Кнопки */
-        button { cursor: pointer; border: none; border-radius: 4px; padding: 5px 10px; font-weight: bold; transition: 0.2s; font-family: inherit; font-size: 12px;}
+        button { cursor: pointer; border: none; border-radius: 4px; padding: 5px 10px; font-weight: bold; transition: 0.2s; font-family: inherit; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;}
         .btn-add { background-color: #3498db; color: white; }
         .btn-add:hover { background-color: #2980b9; }
         .btn-del { background-color: #e74c3c; color: white; padding: 2px 6px; font-size: 11px; }
         .btn-del:hover { background-color: #c0392b; }
         .btn-add-set { background-color: #2ecc71; color: white; padding: 2px 6px; font-size: 11px; }
         .btn-add-set:hover { background-color: #27ae60; }
-        .btn-week { background-color: #9b59b6; color: white; font-size: 14px; padding: 8px 15px; width: 100%; margin-top: 15px; margin-bottom: 15px;}
-        .btn-week:hover { background-color: #8e44ad; }
-        .btn-copy { background-color: #f39c12; color: white; font-size: 11px; padding: 3px 8px; margin-left: 10px;}
+        .btn-cycle { background-color: #2c3e50; color: white; font-size: 14px; padding: 8px 15px; width: 100%; margin-bottom: 20px; border-radius: 6px;}
+        .btn-cycle:hover { background-color: #1a252f; }
+        .btn-copy { background-color: #f39c12; color: white; font-size: 11px; padding: 3px 8px; }
         .btn-copy:hover { background-color: #e67e22; }
-        .btn-delete-week { background-color: #e74c3c; color: white; font-size: 11px; padding: 3px 8px; margin-left: 5px;}
-        .btn-delete-week:hover { background-color: #c0392b; }
+        .btn-delete-item { background-color: #e74c3c; color: white; font-size: 11px; padding: 3px 8px; }
+        .btn-delete-item:hover { background-color: #c0392b; }
 
+        /* Циклы */
+        .cycle-block { background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 25px; border: 2px solid #bdc3c7; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .cycle-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .cycle-title-wrapper { display: flex; align-items: center; gap: 10px; }
+        .cycle-title-input { font-size: 18px; font-weight: bold; color: #2c3e50; border: 1px solid transparent; background: transparent; padding: 2px 4px; border-radius: 4px; width: 250px; font-family: inherit;}
+        .cycle-title-input:hover { border-color: #ccc; background: #f9f9f9; }
+        .cycle-title-input:focus { border-color: #3498db; background: #fff; outline: none; }
+        
         /* Недели */
         .week-block { background: #e9ecef; border-radius: 6px; padding: 10px; margin-bottom: 15px; border: 1px solid #dee2e6; }
         .week-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
@@ -51,6 +59,11 @@
 
         /* Основная таблица (тренировка) */
         .workout-block { background: white; padding: 10px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 10px; overflow-x: auto; }
+        .workout-header { display: flex; justify-content: space-between; margin-bottom: 5px; align-items: center;}
+        .workout-title-input { font-size: 13px; font-weight: bold; color: #34495e; border: 1px solid transparent; background: transparent; padding: 2px 4px; border-radius: 3px; width: 150px; font-family: inherit;}
+        .workout-title-input:hover { border-color: #ccc; background: #f9f9f9;}
+        .workout-title-input:focus { border-color: #3498db; background: #fff; outline: none; }
+
         .main-table { border-collapse: collapse; width: 100%; min-width: 900px; }
         .main-table th, .main-table td { border: 1px solid #ccc; padding: 4px; text-align: center; vertical-align: middle; }
         .main-table th { background-color: #f8f9fa; font-size: 11px; color: #555;}
@@ -90,7 +103,7 @@
 </head>
 <body>
 <div class="container">
-    <h1>Редактор цикла</h1>
+    <h1>Редактор циклов</h1>
     
     <!-- Секция ПМ -->
     <div class="pm-section">
@@ -106,14 +119,15 @@
         </div>
     </div>
 
-    <!-- Контейнер для недель -->
-    <div id="weeksContainer"></div>
+    <!-- Контейнер для циклов -->
+    <div id="cyclesContainer"></div>
 
-    <!-- Кнопка завершения недели -->
-    <button class="btn-week" onclick="addNewWeek()">Закончить неделю и начать новую ➔</button>
+    <!-- Кнопка создания цикла -->
+    <button class="btn-cycle" onclick="addNewCycle()">+ Создать новый цикл (макро/мезо)</button>
 </div>
 
 <script>
+    let globalCycleCounter = 0;
     let globalWeekCounter = 0;
     let globalWorkoutCounter = 0;
     let globalExCounter = 0;
@@ -146,17 +160,214 @@
         return pmData;
     }
 
+    // --- УПРАВЛЕНИЕ ЦИКЛАМИ ---
+    function addNewCycle(isCopy = false) {
+        const cycleId = globalCycleCounter++;
+        const container = document.getElementById('cyclesContainer');
+        
+        const cycleBlock = document.createElement('div');
+        cycleBlock.className = 'cycle-block';
+        cycleBlock.id = `cycle-${cycleId}`;
+        
+        let defaultName = isCopy ? 'Копия цикла' : `Цикл ${cycleId + 1}`;
+        
+        cycleBlock.innerHTML = `
+            <div class="cycle-header">
+                <div class="cycle-title-wrapper">
+                    <span class="collapse-icon" id="icon-cycle-${cycleId}" onclick="toggleCycle(${cycleId})" style="cursor:pointer; font-size:14px;">▼</span>
+                    <input type="text" class="cycle-title-input" value="${defaultName}" placeholder="Название цикла...">
+                    <button class="btn-copy" onclick="copyCycle(${cycleId})">📄 Копировать цикл</button>
+                    <button class="btn-delete-item" onclick="deleteCycle(${cycleId})">🗑 Удалить</button>
+                </div>
+            </div>
+            <div class="cycle-content" id="cycle-content-${cycleId}">
+                <div id="weeks-container-${cycleId}"></div>
+                <button class="btn-add" style="margin-top: 10px;" onclick="addNewWeek(${cycleId})">+ Добавить неделю в этот цикл</button>
+            </div>
+        `;
+        
+        container.appendChild(cycleBlock);
+        
+        if (!isCopy) {
+            addNewWeek(cycleId);
+        }
+        
+        cycleBlock.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function toggleCycle(cycleId) {
+        const content = document.getElementById(`cycle-content-${cycleId}`);
+        const icon = document.getElementById(`icon-cycle-${cycleId}`);
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            icon.textContent = '▼';
+        } else {
+            content.classList.add('hidden');
+            icon.textContent = '►';
+        }
+    }
+
+    function deleteCycle(cycleId) {
+        if(confirm('Вы уверены, что хотите удалить этот цикл? Все недели и тренировки внутри будут потеряны.')) {
+            const cycleBlock = document.getElementById(`cycle-${cycleId}`);
+            if (cycleBlock) {
+                cycleBlock.remove();
+                updateAllCalculations();
+            }
+        }
+    }
+
+    function copyCycle(sourceCycleId) {
+        const newCycleId = globalCycleCounter;
+        addNewCycle(true);
+        
+        const sourceCycleBlock = document.getElementById(`cycle-${sourceCycleId}`);
+        const newCycleBlock = document.getElementById(`cycle-${newCycleId}`);
+        const newWeeksContainer = document.getElementById(`weeks-container-${newCycleId}`);
+        
+        // Копируем название
+        newCycleBlock.querySelector('.cycle-title-input').value = sourceCycleBlock.querySelector('.cycle-title-input').value + ' (копия)';
+        
+        // Очищаем дефолтную пустую неделю
+        newWeeksContainer.innerHTML = '';
+        
+        sourceCycleBlock.querySelectorAll('.week-block').forEach(sourceWeek => {
+            const weekId = globalWeekCounter++;
+            const newWeekBlock = document.createElement('div');
+            newWeekBlock.className = 'week-block';
+            newWeekBlock.id = `week-${weekId}`;
+            newWeekBlock.dataset.parentId = ''; // Внутри цикла не сравниваем с прошлым циклом
+            
+            newWeekBlock.innerHTML = `
+                <div class="week-header">
+                    <div class="week-title-wrapper">
+                        <span class="collapse-icon" id="icon-week-${weekId}" onclick="toggleWeek(${weekId})" style="cursor:pointer;">▼</span> 
+                        <input type="text" class="week-name-input" id="name-week-${weekId}" value="${sourceWeek.querySelector('.week-name-input').value}" placeholder="Название микроцикла...">
+                        <button class="btn-copy" onclick="copyWeek(${weekId})">📄 Копировать</button>
+                        <button class="btn-delete-item" onclick="deleteWeek(${weekId})">🗑 Удалить</button>
+                    </div>
+                    <div class="week-summary" id="week-summary-${weekId}">
+                        <div>КПШ: <span class="w-kpsh main-val">0</span><span class="trend-container" id="trend-kpsh-${weekId}"></span></div>
+                        <div>ОИ: <span class="w-oi main-val">0</span><span class="trend-container" id="trend-oi-${weekId}"></span></div>
+                        <div>ОТ: <span class="w-ot main-val">0</span><span class="trend-container" id="trend-ot-${weekId}"></span></div>
+                    </div>
+                </div>
+                <div class="week-content" id="week-content-${weekId}">
+                    <div id="workouts-container-${weekId}"></div>
+                    <button class="btn-add" onclick="addWorkoutToWeek(${weekId})">+ Добавить тренировку в эту неделю</button>
+                </div>
+            `;
+            newWeeksContainer.appendChild(newWeekBlock);
+            
+            const newWeeksContent = newWeekBlock.querySelector(`#workouts-container-${weekId}`);
+            
+            sourceWeek.querySelectorAll('.workout-block').forEach((sourceWorkout, wIndex) => {
+                const workoutId = globalWorkoutCounter++;
+                const newWorkoutDiv = document.createElement('div');
+                newWorkoutDiv.className = 'workout-block';
+                newWorkoutDiv.id = `workout-${workoutId}`;
+                newWorkoutDiv.dataset.parentWorkoutId = ''; 
+                
+                newWorkoutDiv.innerHTML = `
+                    <div class="workout-header">
+                        <input type="text" class="workout-title-input" value="${sourceWorkout.querySelector('.workout-title-input').value}">
+                        <button class="btn-del" style="background:#95a5a6; font-size: 10px;" onclick="this.closest('.workout-block').remove(); updateAllCalculations();">Удалить тренировку</button>
+                    </div>
+                    <table class="main-table" id="table-${workoutId}">
+                        <thead>
+                            <tr>
+                                <th width="80">УПР</th>
+                                <th width="60">ПМ</th>
+                                <th>Подходы (Вес х Подх х Повт)</th>
+                                <th width="70">КПШ</th>
+                                <th width="70">ОИ</th>
+                                <th width="70">ОТ</th>
+                                <th width="140">Комментарий</th>
+                                <th width="30"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="workout-tbody"></tbody>
+                        <tfoot>
+                            <tr style="font-weight: bold; background-color: #f9f9f9;">
+                                <td colspan="3" style="text-align: right; padding-right: 10px; font-size: 11px;">Сумма за тренировку:</td>
+                                <td class="w-t-kpsh calc-cell">0<span class="trend-container" id="trend-w-kpsh-${workoutId}"></span></td>
+                                <td class="w-t-oi calc-cell">0<span class="trend-container" id="trend-w-oi-${workoutId}"></span></td>
+                                <td class="w-t-ot calc-cell">0<span class="trend-container" id="trend-w-ot-${workoutId}"></span></td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div style="margin-top: 5px;">
+                        <button class="btn-add-set" onclick="addExerciseRow(${workoutId})">+ Добавить упражнение</button>
+                    </div>
+                `;
+                
+                newWeeksContent.appendChild(newWorkoutDiv);
+                const newTbody = newWorkoutDiv.querySelector('.workout-tbody');
+                
+                sourceWorkout.querySelectorAll('.workout-tbody tr').forEach((sourceTr) => {
+                    const exId = globalExCounter++;
+                    const pm = sourceTr.querySelector('.ex-pm').value;
+                    const name = sourceTr.querySelector('.ex-name').value;
+                    const comment = sourceTr.querySelector('.ex-comment') ? sourceTr.querySelector('.ex-comment').value : '';
+                    
+                    const newTr = document.createElement('tr');
+                    newTr.id = `ex-${workoutId}-${exId}`;
+                    newTr.dataset.parentExId = '';
+                    
+                    newTr.innerHTML = `
+                        <td><input type="text" class="input-ex ex-name" value="${name}" placeholder="Название" oninput="onExNameChange(${workoutId}, ${exId})"></td>
+                        <td><input type="number" class="input-ex ex-pm" value="${pm}" placeholder="ПМ" oninput="updateAllCalculations()"></td>
+                        <td>
+                            <div class="scroll-sets" id="sets-container-${workoutId}-${exId}"></div>
+                            <button class="btn-add-set" style="margin-top:3px;" onclick="addSet(${workoutId}, ${exId})">+ Подход</button>
+                        </td>
+                        <td class="calc-kpsh calc-cell">0<span class="trend-container" id="trend-ex-kpsh-${workoutId}-${exId}"></span></td>
+                        <td class="calc-oi calc-cell">0<span class="trend-container" id="trend-ex-oi-${workoutId}-${exId}"></span></td>
+                        <td class="calc-ot calc-cell">0<span class="trend-container" id="trend-ex-ot-${workoutId}-${exId}"></span></td>
+                        <td><input type="text" class="input-ex comment ex-comment" value="${comment}" placeholder="Комментарий..."></td>
+                        <td><button class="btn-del" onclick="this.closest('tr').remove(); updateAllCalculations();">x</button></td>
+                    `;
+                    newTbody.appendChild(newTr);
+                    
+                    const newSetsContainer = newTr.querySelector('.scroll-sets');
+                    sourceTr.querySelectorAll('.set-block').forEach(sourceSet => {
+                        const weight = sourceSet.querySelector('.set-weight').value;
+                        const sets = sourceSet.querySelector('.set-sets').value;
+                        const reps = sourceSet.querySelector('.set-reps').value;
+                        
+                        const setDiv = document.createElement('div');
+                        setDiv.className = 'set-block set-inactive';
+                        setDiv.innerHTML = `
+                            <div class="set-label">Вес</div>
+                            <input type="number" class="input-set set-weight" value="${weight}" oninput="updateAllCalculations()">
+                            <div class="set-label">Подх</div>
+                            <input type="number" class="input-set set-sets" value="${sets}" oninput="updateAllCalculations()">
+                            <div class="set-label">Повт</div>
+                            <input type="number" class="input-set set-reps" value="${reps}" oninput="updateAllCalculations()">
+                            <div class="set-percent">0%</div>
+                            <button class="btn-del" style="margin-top:3px;" onclick="this.parentElement.remove(); updateAllCalculations();">x</button>
+                        `;
+                        newSetsContainer.appendChild(setDiv);
+                    });
+                });
+            });
+        });
+        
+        updateAllCalculations();
+    }
+
     // --- УПРАВЛЕНИЕ НЕДЕЛЯМИ ---
-    function addNewWeek(sourceWeekId = null) {
+    function addNewWeek(cycleId, sourceWeekId = null) {
         const weekId = globalWeekCounter++;
-        const container = document.getElementById('weeksContainer');
+        const container = document.getElementById(`weeks-container-${cycleId}`);
         
         const weekBlock = document.createElement('div');
         weekBlock.className = 'week-block';
         weekBlock.id = `week-${weekId}`;
         weekBlock.dataset.parentId = sourceWeekId !== null ? sourceWeekId : '';
         
-        let defaultName = `Неделя ${weekId + 1}`;
+        let defaultName = `Неделя ${container.children.length + 1}`;
         
         weekBlock.innerHTML = `
             <div class="week-header">
@@ -164,7 +375,7 @@
                     <span class="collapse-icon" id="icon-week-${weekId}" onclick="toggleWeek(${weekId})" style="cursor:pointer;">▼</span> 
                     <input type="text" class="week-name-input" id="name-week-${weekId}" value="${defaultName}" placeholder="Название микроцикла...">
                     <button class="btn-copy" onclick="copyWeek(${weekId})">📄 Копировать</button>
-                    <button class="btn-delete-week" onclick="deleteWeek(${weekId})">🗑 Удалить</button>
+                    <button class="btn-delete-item" onclick="deleteWeek(${weekId})">🗑 Удалить</button>
                 </div>
                 <div class="week-summary" id="week-summary-${weekId}">
                     <div>КПШ: <span class="w-kpsh main-val">0</span><span class="trend-container" id="trend-kpsh-${weekId}"></span></div>
@@ -191,7 +402,6 @@
         updateAllCalculations();
     }
 
-    // Удаление недели
     function deleteWeek(weekId) {
         if(confirm('Вы уверены, что хотите удалить эту неделю? Все данные внутри будут потеряны.')) {
             const weekBlock = document.getElementById(`week-${weekId}`);
@@ -214,17 +424,18 @@
         }
     }
 
-    // Копирование недели
     function copyWeek(sourceWeekId) {
-        const newWeekId = globalWeekCounter;
-        addNewWeek(sourceWeekId);
-        
+        // Находим родительский контейнер недель
         const sourceWeekBlock = document.getElementById(`week-${sourceWeekId}`);
-        const newWeekContent = document.getElementById(`week-content-${newWeekId}`);
+        const cycleId = sourceWeekBlock.closest('.cycle-block').id.split('-')[1];
         
+        const newWeekId = globalWeekCounter;
+        addNewWeek(cycleId, sourceWeekId);
+        
+        const newWeekContent = document.getElementById(`week-content-${newWeekId}`);
         newWeekContent.querySelector('#workouts-container-' + newWeekId).innerHTML = '';
         
-        sourceWeekBlock.querySelectorAll('.workout-block').forEach((sourceWorkout, wIndex) => {
+        sourceWeekBlock.querySelectorAll('.workout-block').forEach((sourceWorkout) => {
             const workoutId = globalWorkoutCounter++;
             const newWorkoutDiv = document.createElement('div');
             newWorkoutDiv.className = 'workout-block';
@@ -232,8 +443,8 @@
             newWorkoutDiv.dataset.parentWorkoutId = sourceWorkout.id.split('-')[1];
             
             newWorkoutDiv.innerHTML = `
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <strong style="font-size: 13px; color: #34495e;">Тренировка ${wIndex + 1}</strong>
+                <div class="workout-header">
+                    <input type="text" class="workout-title-input" value="${sourceWorkout.querySelector('.workout-title-input').value}">
                     <button class="btn-del" style="background:#95a5a6; font-size: 10px;" onclick="this.closest('.workout-block').remove(); updateAllCalculations();">Удалить тренировку</button>
                 </div>
                 <table class="main-table" id="table-${workoutId}">
@@ -268,7 +479,7 @@
             newWeekContent.querySelector('#workouts-container-' + newWeekId).appendChild(newWorkoutDiv);
             const newTbody = newWorkoutDiv.querySelector('.workout-tbody');
             
-            sourceWorkout.querySelectorAll('.workout-tbody tr').forEach((sourceTr, eIndex) => {
+            sourceWorkout.querySelectorAll('.workout-tbody tr').forEach((sourceTr) => {
                 const exId = globalExCounter++;
                 const pm = sourceTr.querySelector('.ex-pm').value;
                 const name = sourceTr.querySelector('.ex-name').value;
@@ -294,7 +505,6 @@
                 newTbody.appendChild(newTr);
                 
                 const newSetsContainer = newTr.querySelector('.scroll-sets');
-                
                 sourceTr.querySelectorAll('.set-block').forEach(sourceSet => {
                     const weight = sourceSet.querySelector('.set-weight').value;
                     const sets = sourceSet.querySelector('.set-sets').value;
@@ -330,8 +540,8 @@
         workoutDiv.id = `workout-${workoutId}`;
         
         workoutDiv.innerHTML = `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                <strong style="font-size: 13px; color: #34495e;">Тренировка ${container.children.length + 1}</strong>
+            <div class="workout-header">
+                <input type="text" class="workout-title-input" value="Тренировка ${container.children.length + 1}">
                 <button class="btn-del" style="background:#95a5a6; font-size: 10px;" onclick="this.closest('.workout-block').remove(); updateAllCalculations();">Удалить тренировку</button>
             </div>
             <table class="main-table" id="table-${workoutId}">
@@ -571,7 +781,7 @@
         addPmRow();
         addPmRow();
         addPmRow();
-        addNewWeek();
+        addNewCycle(); // Создаем первый цикл при загрузке
     };
 </script>
 </body>

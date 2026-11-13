@@ -29,10 +29,6 @@
         .bg-color-2 { background-color: #f0f9e8; }
         .bg-color-3 { background-color: #f4e8f9; }
         .bg-color-4 { background-color: #f9e8e8; }
-
-        /* Кнопка очистки */
-        .btn-clear { background-color: #e74c3c; color: white; font-size: 12px; padding: 6px 12px; border-radius: 4px; font-weight: bold; }
-        .btn-clear:hover { background-color: #c0392b; }
     </style>
 </head>
 <body>
@@ -41,6 +37,7 @@
 <div class="top-nav">
     <a href="index.html" class="btn-link" style="padding: 5px 10px; border-radius: 4px;">← Назад в библиотеку</a>
     <span style="font-weight: bold; color: #2c3e50;">Конструктор программы</span>
+    <div style="width: 120px;"></div> 
 </div>
 
 <div class="layout">
@@ -103,24 +100,15 @@
     // СИСТЕМА АВТОСОХРАНЕНИЯ
     // ==========================================
     
-    // Функция сохранения состояния
     function saveState() {
-        const state = {
-            cycles: [],
-            periods: []
-        };
+        const state = { cycles: [], periods: [] };
 
-        // 1. Собираем ПМ
         const pmData = [];
         document.querySelectorAll('#pmTbody tr').forEach(tr => {
-            pmData.push({
-                name: tr.querySelector('.pm-name').value,
-                val: tr.querySelector('.pm-val').value
-            });
+            pmData.push({ name: tr.querySelector('.pm-name').value, val: tr.querySelector('.pm-val').value });
         });
         state.pm = pmData;
 
-        // 2. Собираем Периоды
         const timelineNames = document.getElementById('timelineNamesRow');
         if (timelineNames.children.length > 0 && !timelineNames.children[0].classList.contains('empty-placeholder')) {
             for (let i = 0; i < timelineNames.children.length; i++) {
@@ -132,25 +120,12 @@
             }
         }
 
-        // 3. Собираем Циклы
         document.querySelectorAll('.cycle-block').forEach(cycle => {
-            const cycleData = {
-                title: cycle.querySelector('.cycle-title-input').value,
-                weeks: []
-            };
-
+            const cycleData = { title: cycle.querySelector('.cycle-title-input').value, weeks: [] };
             cycle.querySelectorAll('.week-block').forEach(week => {
-                const weekData = {
-                    title: week.querySelector('.week-name-input').value,
-                    workouts: []
-                };
-
+                const weekData = { title: week.querySelector('.week-name-input').value, workouts: [] };
                 week.querySelectorAll('.workout-block').forEach(workout => {
-                    const workoutData = {
-                        title: workout.querySelector('.workout-title-input').value,
-                        exercises: []
-                    };
-
+                    const workoutData = { title: workout.querySelector('.workout-title-input').value, exercises: [] };
                     workout.querySelectorAll('.workout-tbody tr').forEach(tr => {
                         const exData = {
                             name: tr.querySelector('.ex-name').value,
@@ -158,7 +133,6 @@
                             comment: tr.querySelector('.ex-comment') ? tr.querySelector('.ex-comment').value : '',
                             sets: []
                         };
-
                         tr.querySelectorAll('.set-block').forEach(set => {
                             exData.sets.push({
                                 weight: set.querySelector('.set-weight').value,
@@ -175,41 +149,26 @@
             state.cycles.push(cycleData);
         });
 
-        // Записываем в LocalStorage
         localStorage.setItem('trainerAppState', JSON.stringify(state));
     }
 
-    // Функция восстановления
     function loadState() {
         const saved = localStorage.getItem('trainerAppState');
         if (!saved) return false;
 
         const state = JSON.parse(saved);
 
-        // 1. Восстанавливаем ПМ
-        if (state.pm) {
-            state.pm.forEach(pm => {
-                addPmRow(pm.name, pm.val);
-            });
-        }
+        if (state.pm) state.pm.forEach(pm => addPmRow(pm.name, pm.val));
+        if (state.periods) state.periods.forEach(p => addPeriodColumn(p.name, p.sub, p.desc));
 
-        // 2. Восстанавливаем Периоды
-        if (state.periods) {
-            state.periods.forEach(p => {
-                addPeriodColumn(p.name, p.sub, p.desc);
-            });
-        }
-
-        // 3. Восстанавливаем Циклы
         if (state.cycles) {
             state.cycles.forEach(cycle => {
-                // Создаем цикл
                 const cycleId = addNewCycle();
                 const cycleBlock = document.getElementById(`cycle-${cycleId}`);
                 cycleBlock.querySelector('.cycle-title-input').value = cycle.title;
                 
                 const weeksContainer = document.getElementById(`weeks-container-${cycleId}`);
-                weeksContainer.innerHTML = ''; // Очищаем дефолтную неделю
+                weeksContainer.innerHTML = ''; 
 
                 cycle.weeks.forEach(week => {
                     const weekId = addNewWeek(cycleId);
@@ -217,7 +176,7 @@
                     weekBlock.querySelector('.week-name-input').value = week.title;
                     
                     const workoutsContainer = document.getElementById(`workouts-container-${weekId}`);
-                    workoutsContainer.innerHTML = ''; // Очищаем дефолтную тренировку
+                    workoutsContainer.innerHTML = '';
 
                     week.workouts.forEach(workout => {
                         const workoutId = addWorkoutToWeek(weekId);
@@ -225,7 +184,7 @@
                         workoutBlock.querySelector('.workout-title-input').value = workout.title;
                         
                         const tbody = workoutBlock.querySelector('.workout-tbody');
-                        tbody.innerHTML = ''; // Очищаем дефолтное упражнение
+                        tbody.innerHTML = '';
 
                         workout.exercises.forEach(ex => {
                             const exId = addExerciseRow(workoutId);
@@ -236,7 +195,7 @@
                             if (tr.querySelector('.ex-comment')) tr.querySelector('.ex-comment').value = ex.comment;
                             
                             const setsContainer = tr.querySelector('.scroll-sets');
-                            setsContainer.innerHTML = ''; // Очищаем дефолтный подход
+                            setsContainer.innerHTML = ''; 
                             
                             ex.sets.forEach(set => {
                                 addSet(workoutId, exId, set.weight, set.sets, set.reps);
@@ -250,15 +209,11 @@
         return true;
     }
 
-    // Привязка автосохранения к вводу
     document.addEventListener('input', saveState);
-    document.addEventListener('click', () => {
-        // Задержка нужна, чтобы состояние успело обновиться после кликов (удаление, добавление)
-        setTimeout(saveState, 50); 
-    });
+    document.addEventListener('click', () => setTimeout(saveState, 50)); 
 
     // ==========================================
-    // БАЗОВЫЕ ФУНКЦИИ (ПМ, ПЕРИОДЫ И Т.Д.)
+    // БАЗОВЫЕ ФУНКЦИИ
     // ==========================================
 
     function addPmRow(name = '', val = '') {
@@ -342,15 +297,25 @@
         document.getElementById('timelineDescRow').innerHTML = '<td style="border:none;"></td>';
     }
 
+    // --- УПРАВЛЕНИЕ ЦИКЛАМИ ---
     function addNewCycle(isCopy = false) {
         const cycleId = globalCycleCounter++;
         const container = document.getElementById('cyclesContainer');
         
+        // Считаем текущее количество циклов на экране
+        const currentCyclesCount = container.children.length;
+        
+        // Формируем название
+        let defaultName = '';
+        if (isCopy) {
+            defaultName = `Цикл ${currentCyclesCount} (копия)`;
+        } else {
+            defaultName = `Цикл ${currentCyclesCount + 1}`;
+        }
+        
         const cycleBlock = document.createElement('div');
         cycleBlock.className = 'cycle-block';
         cycleBlock.id = `cycle-${cycleId}`;
-        
-        let defaultName = isCopy ? 'Копия цикла' : `Цикл ${cycleId + 1}`;
         
         cycleBlock.innerHTML = `
             <div class="cycle-header">
@@ -372,7 +337,7 @@
         if (!isCopy) {
             addNewWeek(cycleId);
         }
-        return cycleId; // ВАЖНО: возвращаем ID для восстановления
+        return cycleId;
     }
 
     function toggleCycle(cycleId) {
@@ -399,12 +364,13 @@
 
     function copyCycle(sourceCycleId) {
         const newCycleId = globalCycleCounter;
-        addNewCycle(true);
+        addNewCycle(true); // Передаем true, чтобы название сформировалось как "(копия)"
         
         const sourceCycleBlock = document.getElementById(`cycle-${sourceCycleId}`);
         const newCycleBlock = document.getElementById(`cycle-${newCycleId}`);
         const newWeeksContainer = document.getElementById(`weeks-container-${newCycleId}`);
         
+        // Копируем оригинальное название и добавляем "(копия)"
         newCycleBlock.querySelector('.cycle-title-input').value = sourceCycleBlock.querySelector('.cycle-title-input').value + ' (копия)';
         newWeeksContainer.innerHTML = '';
         
@@ -584,7 +550,7 @@
         
         weekBlock.scrollIntoView({ behavior: 'smooth' });
         updateAllCalculations();
-        return weekId; // ВАЖНО: возвращаем ID
+        return weekId;
     }
 
     function deleteWeek(weekId) {
@@ -766,7 +732,7 @@
         
         container.appendChild(workoutDiv);
         addExerciseRow(workoutId);
-        return workoutId; // ВАЖНО: возвращаем ID
+        return workoutId;
     }
 
     function addExerciseRow(workoutId) {
@@ -789,7 +755,7 @@
         `;
         tbody.appendChild(tr);
         addSet(workoutId, id);
-        return id; // ВАЖНО: возвращаем ID
+        return id;
     }
 
     function onExNameChange(workoutId, id) {
@@ -975,14 +941,9 @@
         el.innerHTML = `<span class="trend-indicator ${colorClass}" title="Разница: ${sign}${diffText}">${arrow}</span>`;
     }
 
-    // ==========================================
-    // ИНИЦИАЛИЗАЦИЯ
-    // ==========================================
+    // Инициализация
     window.onload = () => {
-        // Пытаемся загрузить сохраненное состояние
         const isLoaded = loadState();
-        
-        // Если ничего не было сохранено (первый запуск) — создаем пустой шаблон
         if (!isLoaded) {
             addPmRow(); addPmRow(); addPmRow();
             showTimelinePlaceholder();

@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        /* Фикс вылета за экран */
+        body { overflow-x: hidden; }
+        
         /* Стили для таймлайна */
         .timeline-section { background: white; padding: 10px; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); margin-bottom: 10px; overflow-x: auto; }
         .timeline-table { border-collapse: collapse; width: 100%; min-width: 500px; table-layout: fixed;}
@@ -41,8 +44,11 @@
 
         .save-status { font-size: 12px; color: #27ae60; margin-right: 15px; display: none;}
 
-        /* ====== СТИЛИ ДЛЯ ГРАФИКОВ ====== */
-        .right-panel { flex: 1; display: flex; justify-content: center; align-items: flex-start; padding: 0 10px; border: none; background: transparent; }
+        /* ====== СТИЛИ ДЛЯ ГРАФИКОВ (АДАПТИВНОСТЬ) ====== */
+        .layout { display: flex; gap: 20px; max-width: 1600px; margin: 0 auto; height: 95vh; width: 100%; overflow: hidden; }
+        .left-panel { flex: 0 0 60%; overflow-y: auto; padding-right: 10px; }
+        .right-panel { flex: 1; min-width: 0; /* Важно для Flexbox, чтобы контент не распирал */ display: flex; justify-content: center; align-items: flex-start; padding: 0 10px; border: none; background: transparent; overflow-y: auto;}
+        
         .charts-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 15px; }
         
         .chart-block { background: white; border-radius: 6px; border: 1px solid #e1e4e6; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.02);}
@@ -61,7 +67,32 @@
         
         .chart-select { padding: 4px; border-radius: 4px; border: 1px solid #ccc; font-family: inherit; font-size: 12px; width: 100%; margin-bottom: 10px;}
         
-        .canvas-wrapper { position: relative; height: 220px; width: 100%; }
+        .canvas-wrapper { position: relative; height: 220px; width: 100%; max-width: 100%; overflow: hidden; }
+
+        /* Стрелочки динамики */
+        .trend-indicator { font-size: 10px; margin-left: 3px; cursor: help; position: relative; display: inline-block; }
+        .trend-up { color: #27ae60; }
+        .trend-down { color: #c0392b; }
+
+        /* ====== ОБНОВЛЕННЫЕ ЦВЕТА ====== */
+        /* 50-59 ЗЕЛЕНЫЙ */
+        .set-green { border-color: #2ecc71; background-color: #f0fdf4; }
+        .set-green .set-percent { color: #27ae60; background: #d4f5e2; }
+        /* 60-69 ЖЕЛТЫЙ */
+        .set-yellow { border-color: #f1c40f; background-color: #fffdf0; }
+        .set-yellow .set-percent { color: #d35400; background: #fcf3cf; }
+        /* 70-79 ОРАНЖЕВЫЙ */
+        .set-orange { border-color: #e67e22; background-color: #fff5ec; }
+        .set-orange .set-percent { color: #e67e22; background: #fdebd0; }
+        /* 80-89 КРАСНЫЙ */
+        .set-red { border-color: #e74c3c; background-color: #fdf2f1; }
+        .set-red .set-percent { color: #c0392b; background: #fadbd8; }
+        /* 90+ ЧЕРНЫЙ */
+        .set-black { border-color: #2c3e50; background-color: #f4f6f7; }
+        .set-black .set-percent { color: #fff; background: #2c3e50; }
+
+        .set-inactive { border-color: #eee; background-color: #fafafa; opacity: 0.6; }
+        .set-inactive .set-percent { color: #999; background: #eee; }
     </style>
 </head>
 <body>
@@ -542,6 +573,8 @@
         const container = document.getElementById(`weeks-container-${cycleId}`);
         const div = document.createElement('div');
         div.className = 'week-block'; div.id = `week-${weekId}`;
+        div.dataset.parentId = sourceWeekId !== null ? sourceWeekId : ''; // ВАЖНО: сохраняем ID родителя
+        
         div.innerHTML = `
             <div class="week-header">
                 <div class="week-title-wrapper">
@@ -551,7 +584,9 @@
                     <button class="btn-delete-item" onclick="if(confirm('Удалить?')) { this.closest('.week-block').remove(); updateAllCalculations(); }">🗑 Удалить</button>
                 </div>
                 <div class="week-summary" id="week-summary-${weekId}">
-                    <div>КПШ: <span class="w-kpsh main-val">0</span></div><div>ОИ: <span class="w-oi main-val">0</span></div><div>ОТ: <span class="w-ot main-val">0</span></div>
+                    <div>КПШ: <span class="w-kpsh main-val">0</span><span class="trend-container" id="trend-kpsh-${weekId}"></span></div>
+                    <div>ОИ: <span class="w-oi main-val">0</span><span class="trend-container" id="trend-oi-${weekId}"></span></div>
+                    <div>ОТ: <span class="w-ot main-val">0</span><span class="trend-container" id="trend-ot-${weekId}"></span></div>
                 </div>
             </div>
             <div class="week-content" id="week-content-${weekId}">
@@ -677,47 +712,123 @@
         updateAllCalculations();
     }
 
+    // ФУНКЦИЯ ТРЕНДОВ
+    function setTrend(elementId, current, parent, isOi = false) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        const diff = current - parent;
+        if (Math.abs(diff) < 0.1) { el.innerHTML = ''; return; }
+        const isUp = diff > 0;
+        const colorClass = isUp ? 'trend-up' : 'trend-down';
+        const arrow = isUp ? '▲' : '▼';
+        const sign = isUp ? '+' : '';
+        const diffText = isOi ? diff.toFixed(1) : Math.round(diff);
+        el.innerHTML = `<span class="trend-indicator ${colorClass}" title="Разница: ${sign}${diffText}">${arrow}</span>`;
+    }
+
     function updateAllCalculations() {
         const pmData = getPmData();
         document.querySelectorAll('.week-block').forEach(weekBlock => {
             let weekKpsh = 0, weekOt = 0;
             weekBlock.querySelectorAll('.workout-block').forEach(workoutBlock => {
+                const workoutId = workoutBlock.id.split('-')[1];
                 let woKpsh = 0, woOt = 0;
+                
                 workoutBlock.querySelectorAll('tbody tr').forEach(tr => {
                     const pm = pmData[tr.querySelector('.ex-name').value] || 0;
                     let exKpsh = 0, exOt = 0;
+                    
                     tr.querySelectorAll('.set-block').forEach(setBlock => {
                         const w = parseFloat(setBlock.querySelector('.set-weight').value) || 0;
                         const s = parseFloat(setBlock.querySelector('.set-sets').value) || 0;
                         const r = parseFloat(setBlock.querySelector('.set-reps').value) || 0;
                         const pDisp = setBlock.querySelector('.set-percent');
                         setBlock.className = 'set-block set-inactive'; pDisp.className = 'set-percent';
+                        
                         if (pm > 0 && w > 0 && s > 0 && r > 0) {
                             const percent = (w / pm) * 100;
                             pDisp.textContent = Math.round(percent) + '%';
+                            
+                            // НОВЫЕ ЦВЕТА
+                            if (percent >= 90) setBlock.classList.add('set-black');
+                            else if (percent >= 80) setBlock.classList.add('set-red');
+                            else if (percent >= 70) setBlock.classList.add('set-orange');
+                            else if (percent >= 60) setBlock.classList.add('set-yellow');
+                            else if (percent >= 50) setBlock.classList.add('set-green');
+                            
                             if (percent >= 50) {
-                                if (percent >= 95) setBlock.classList.add('set-black');
-                                else if (percent >= 85) setBlock.classList.add('set-red');
-                                else if (percent >= 70) setBlock.classList.add('set-yellow');
-                                else setBlock.classList.add('set-green');
                                 setBlock.classList.remove('set-inactive');
                                 exKpsh += s * r; exOt += (s * r * percent);
                             }
                         } else pDisp.textContent = '0%';
                     });
-                    tr.querySelector('.calc-kpsh').textContent = Math.round(exKpsh) || 0;
-                    tr.querySelector('.calc-ot').textContent = Math.round(exOt) || 0;
-                    tr.querySelector('.calc-oi').textContent = exKpsh > 0 ? (exOt / exKpsh).toFixed(1) : 0;
+                    
+                    const dispExKpsh = Math.round(exKpsh) || 0;
+                    const dispExOt = Math.round(exOt) || 0;
+                    const dispExOi = exKpsh > 0 ? parseFloat((exOt / exKpsh).toFixed(1)) : 0;
+                    
+                    tr.querySelector('.calc-kpsh').innerHTML = `${dispExKpsh}<span class="trend-container" id="trend-ex-kpsh-${workoutId}-${tr.id.split('-')[2]}"></span>`;
+                    tr.querySelector('.calc-ot').innerHTML = `${dispExOt}<span class="trend-container" id="trend-ex-ot-${workoutId}-${tr.id.split('-')[2]}"></span>`;
+                    tr.querySelector('.calc-oi').innerHTML = `${dispExOi}<span class="trend-container" id="trend-ex-oi-${workoutId}-${tr.id.split('-')[2]}"></span>`;
+                    
+                    const parentExId = tr.dataset.parentExId;
+                    if (parentExId) {
+                        const parentTr = document.getElementById(`ex-${workoutBlock.dataset.parentWorkoutId}-${parentExId}`);
+                        if (parentTr && parentTr.querySelector('.calc-kpsh')) {
+                            const pKpsh = parseFloat(parentTr.querySelector('.calc-kpsh').textContent) || 0;
+                            const pOt = parseFloat(parentTr.querySelector('.calc-ot').textContent) || 0;
+                            const pOi = parseFloat(parentTr.querySelector('.calc-oi').textContent) || 0;
+                            setTrend(`trend-ex-kpsh-${workoutId}-${tr.id.split('-')[2]}`, dispExKpsh, pKpsh);
+                            setTrend(`trend-ex-ot-${workoutId}-${tr.id.split('-')[2]}`, dispExOt, pOt);
+                            setTrend(`trend-ex-oi-${workoutId}-${tr.id.split('-')[2]}`, dispExOi, pOi, true);
+                        }
+                    }
                     woKpsh += exKpsh; woOt += exOt;
                 });
-                workoutBlock.querySelector('.w-t-kpsh').textContent = Math.round(woKpsh) || 0;
-                workoutBlock.querySelector('.w-t-ot').textContent = Math.round(woOt) || 0;
-                workoutBlock.querySelector('.w-t-oi').textContent = woKpsh > 0 ? (woOt / woKpsh).toFixed(1) : 0;
+                
+                const dispWKpsh = Math.round(woKpsh) || 0;
+                const dispWOt = Math.round(woOt) || 0;
+                const dispWOi = woKpsh > 0 ? parseFloat((woOt / woKpsh).toFixed(1)) : 0;
+                
+                workoutBlock.querySelector('.w-t-kpsh').innerHTML = `${dispWKpsh}<span class="trend-container" id="trend-w-kpsh-${workoutId}"></span>`;
+                workoutBlock.querySelector('.w-t-ot').innerHTML = `${dispWOt}<span class="trend-container" id="trend-w-ot-${workoutId}"></span>`;
+                workoutBlock.querySelector('.w-t-oi').innerHTML = `${dispWOi}<span class="trend-container" id="trend-w-oi-${workoutId}"></span>`;
+                
+                const parentWorkoutId = workoutBlock.dataset.parentWorkoutId;
+                if (parentWorkoutId) {
+                    const parentWorkout = document.getElementById(`workout-${parentWorkoutId}`);
+                    if (parentWorkout && parentWorkout.querySelector('.w-t-kpsh')) {
+                        const pWKpsh = parseFloat(parentWorkout.querySelector('.w-t-kpsh').textContent) || 0;
+                        const pWOt = parseFloat(parentWorkout.querySelector('.w-t-ot').textContent) || 0;
+                        const pWOi = parseFloat(parentWorkout.querySelector('.w-t-oi').textContent) || 0;
+                        setTrend(`trend-w-kpsh-${workoutId}`, dispWKpsh, pWKpsh);
+                        setTrend(`trend-w-ot-${workoutId}`, dispWOt, pWOt);
+                        setTrend(`trend-w-oi-${workoutId}`, dispWOi, pWOi, true);
+                    }
+                }
                 weekKpsh += woKpsh; weekOt += woOt;
             });
-            weekBlock.querySelector('.w-kpsh').textContent = Math.round(weekKpsh) || 0;
-            weekBlock.querySelector('.w-ot').textContent = Math.round(weekOt) || 0;
-            weekBlock.querySelector('.w-oi').textContent = weekKpsh > 0 ? (weekOt / weekKpsh).toFixed(1) : 0;
+            
+            const dispKpsh = Math.round(weekKpsh) || 0;
+            const dispOt = Math.round(weekOt) || 0;
+            const dispOi = weekKpsh > 0 ? parseFloat((weekOt / weekKpsh).toFixed(1)) : 0;
+            
+            weekBlock.querySelector('.w-kpsh').innerHTML = `${dispKpsh}<span class="trend-container" id="trend-kpsh-${weekBlock.id.split('-')[1]}"></span>`;
+            weekBlock.querySelector('.w-ot').innerHTML = `${dispOt}<span class="trend-container" id="trend-ot-${weekBlock.id.split('-')[1]}"></span>`;
+            weekBlock.querySelector('.w-oi').innerHTML = `${dispOi}<span class="trend-container" id="trend-oi-${weekBlock.id.split('-')[1]}"></span>`;
+            
+            const parentId = weekBlock.dataset.parentId;
+            if (parentId) {
+                const parentBlock = document.getElementById(`week-${parentId}`);
+                if (parentBlock) {
+                    const pKpsh = parseFloat(parentBlock.querySelector('.w-kpsh').textContent) || 0;
+                    const pOt = parseFloat(parentBlock.querySelector('.w-ot').textContent) || 0;
+                    const pOi = parseFloat(parentBlock.querySelector('.w-oi').textContent) || 0;
+                    setTrend(`trend-kpsh-${weekBlock.id.split('-')[1]}`, dispKpsh, pKpsh);
+                    setTrend(`trend-ot-${weekBlock.id.split('-')[1]}`, dispOt, pOt);
+                    setTrend(`trend-oi-${weekBlock.id.split('-')[1]}`, dispOi, pOi, true);
+                }
+            }
         });
         renderCharts();
         updateChartDropdown();
@@ -738,22 +849,15 @@
                 ctx.strokeStyle = '#bdc3c7'; 
                 ctx.setLineDash([5, 5]); 
                 ctx.lineWidth = 1;
-                
                 lines.forEach(index => {
                     let x;
-                    if (index === 0) {
-                        // Если в самом начале (для графиков недель/циклов), рисуем по левому краю
-                        x = xAxis.left; 
-                    } else {
-                        // Ищем ровно середину между предыдущим и текущим столбцом
+                    if (index === 0) { x = xAxis.left; } 
+                    else {
                         const prevX = xAxis.getPixelForValue(index - 1);
                         const currX = xAxis.getPixelForValue(index);
                         x = (prevX + currX) / 2;
                     }
-                    ctx.beginPath(); 
-                    ctx.moveTo(x, yAxis.top); 
-                    ctx.lineTo(x, yAxis.bottom); 
-                    ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(x, yAxis.top); ctx.lineTo(x, yAxis.bottom); ctx.stroke();
                 });
                 ctx.restore();
             }
@@ -803,7 +907,6 @@
         const selectedEx = document.getElementById('ex-chart-select').value;
         const labelsWo = [], labelsWeek = [];
         const weekLinesIndices = [], cycleLinesIndices = [];
-        // Инициализируем структуру данных
         const data = { wo: { kpsh: [], oi: [], ot: [] }, week: { kpsh: [], oi: [], ot: [] }, ex: { kpsh: [], oi: [], ot: [] } };
 
         let globalWorkoutIndex = 0;
@@ -823,19 +926,16 @@
                         const kpsh = parseFloat(tr.querySelector('.calc-kpsh').textContent) || 0;
                         const ot = parseFloat(tr.querySelector('.calc-ot').textContent) || 0;
                         woKpsh += kpsh; woOt += ot;
-                        // Ищем выбранное упражнение
                         if (exName === selectedEx) { exKpsh += kpsh; exOt += ot; }
                     });
 
-                    // Для тренировок и недель нули - это нормально (отдых)
                     data.wo.kpsh.push(woKpsh); data.wo.ot.push(woOt); data.wo.oi.push(woKpsh > 0 ? parseFloat((woOt / woKpsh).toFixed(1)) : 0);
-                    weekKpsh += woKpsh; weekOt += woOt;
-
-                    // ДЛЯ УПРАЖНЕНИЯ: если упражнения не было (0), пишем null, чтобы график не падал в ноль, а пропускал эту точку
+                    
                     data.ex.kpsh.push(exKpsh === 0 ? null : exKpsh); 
                     data.ex.ot.push(exOt === 0 ? null : exOt); 
                     data.ex.oi.push(exKpsh > 0 ? parseFloat((exOt / exKpsh).toFixed(1)) : null);
                     
+                    weekKpsh += woKpsh; weekOt += woOt;
                     globalWorkoutIndex++;
                 });
                 data.week.kpsh.push(weekKpsh); data.week.ot.push(weekOt); data.week.oi.push(weekKpsh > 0 ? parseFloat((weekOt / weekKpsh).toFixed(1)) : 0);
@@ -848,7 +948,7 @@
         return {
             responsive: true, 
             maintainAspectRatio: false, 
-            spanGaps: true, // ВАЖНО: Соединяет точки, даже если между ними null
+            spanGaps: true, 
             interaction: { mode: 'index', intersect: false },
             plugins: { legend: { display: showLegend, position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }, verticalLine: { lines: lines } },
             scales: { x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 8, font: { size: 10 } } }, y: { beginAtZero: true, suggestedMax: 10, ticks: { font: { size: 10 } } } },
@@ -860,24 +960,15 @@
         const { labelsWo, labelsWeek, data, weekLinesIndices, cycleLinesIndices } = getChartData();
         const colors = { kpsh: { border: '#3498db', bg: 'rgba(52, 152, 219, 0.1)', label: 'КПШ' }, oi: { border: '#e67e22', bg: 'rgba(230, 126, 34, 0.1)', label: 'ОИ' }, ot: { border: '#9b59b6', bg: 'rgba(155, 89, 182, 0.1)', label: 'ОТ' } };
 
-        // 1. Упражнение (ЛАЙН с пропусками)
         const exMetrics = getActiveMetrics('ex-metric-toggles');
         const exLines = document.getElementById('ex-show-weeks').checked ? weekLinesIndices : [];
         const exDatasets = [];
         exMetrics.forEach(metric => {
-            exDatasets.push({ 
-                label: colors[metric].label, 
-                data: data.ex[metric], 
-                borderColor: colors[metric].border, 
-                backgroundColor: colors[metric].bg, 
-                fill: false, // Отключаем заливку, чтобы не было странных фигур, когда график прыгает через null
-                spanGaps: true // Линия соединяет точки "через пустоту"
-            });
+            exDatasets.push({ label: colors[metric].label, data: data.ex[metric], borderColor: colors[metric].border, backgroundColor: colors[metric].bg, fill: false, spanGaps: true });
         });
         if (chartEx) chartEx.destroy();
         chartEx = new Chart(document.getElementById('chart-exercise').getContext('2d'), { type: 'line', data: { labels: labelsWo, datasets: exDatasets }, options: getCommonOptions(exLines) });
 
-        // 2. Тренировка (ЛАЙН)
         const woMetrics = getActiveMetrics('wo-metric-toggles');
         const woLines = document.getElementById('wo-show-weeks').checked ? weekLinesIndices : [];
         const woDatasets = [];
@@ -887,7 +978,6 @@
         if (chartWo) chartWo.destroy();
         chartWo = new Chart(document.getElementById('chart-workout').getContext('2d'), { type: 'line', data: { labels: labelsWo, datasets: woDatasets }, options: getCommonOptions(woLines) });
 
-        // 3. Неделя (ЛАЙН)
         const weekMetrics = getActiveMetrics('week-metric-toggles');
         const cycleLines = document.getElementById('week-show-cycles').checked ? cycleLinesIndices : [];
         const weekDatasets = [];

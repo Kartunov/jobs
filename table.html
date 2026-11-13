@@ -44,7 +44,7 @@
     
     <!-- Кнопка очистки в правом верхнем углу -->
     <div>
-        <button class="btn-clear" onclick="clearAllData()">🗑 Очистить всё</button>
+        <button id="clearBtn" class="btn-clear" onclick="clearAllData()">🗑 Очистить всё</button>
     </div>
 </div>
 
@@ -257,9 +257,25 @@
 
     // Очистка всего
     function clearAllData() {
-        if(confirm('Вы уверены, что хотите полностью очистить страницу? Все данные будут удалены.')) {
+        const btn = document.getElementById('clearBtn');
+        
+        // Если кнопка ещё не в режиме подтверждения
+        if (btn.innerHTML !== '❓ Точно удалить?') {
+            btn.innerHTML = '❓ Точно удалить?';
+            btn.style.backgroundColor = '#e74c3c';
+            btn.style.color = 'white';
+            btn.style.border = '2px solid #c0392b';
+            
+            // Если передумал и не нажал второй раз за 3 секунды — возвращаем как было
+            setTimeout(() => {
+                btn.innerHTML = '🗑 Очистить всё';
+                btn.style.border = 'none';
+            }, 3000);
+        } else {
+            // Второй клик — полностью очищаем
             localStorage.removeItem('trainerAppState');
-            location.reload(); // Перезагружаем страницу (она загрузится пустой)
+            // Принудительно очищаем поле перед перезагрузкой
+            window.location.href = window.location.pathname; 
         }
     }
 

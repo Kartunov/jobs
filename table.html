@@ -32,6 +32,10 @@
 
         /* Стили для select */
         select.input-ex { width: 130px; padding: 2px; text-align: left; }
+        
+        /* Кнопки облака */
+        .btn-cloud { background-color: #9b59b6; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; margin-left: 10px;}
+        .btn-cloud:hover { background-color: #8e44ad; }
     </style>
 </head>
 <body>
@@ -39,7 +43,11 @@
 <div class="top-nav">
     <a href="index.html" class="btn-link" style="padding: 5px 10px; border-radius: 4px;">← На главную</a>
     <span style="font-weight: bold; color: #2c3e50;">Конструктор программы</span>
-    <div style="width: 120px;"></div> 
+    
+    <div style="display: flex; gap: 10px;">
+        <button class="btn-cloud" id="btn-save-cloud">☁️ Сохранить в облако</button>
+        <button class="btn-cloud" id="btn-load-cloud" style="background-color: #3498db;">☁️ Загрузить из облака</button>
+    </div>
 </div>
 
 <div class="layout">
@@ -88,23 +96,94 @@
     </div>
 </div>
 
+<!-- ПОДКЛЮЧАЕМ FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js";
+
+  // Твой конфиг
+  const firebaseConfig = {
+    apiKey: "AIzaSyCU418F9p5qxpEFIeHGNSQD17z155Tqtf8",
+    authDomain: "jobs-38388.firebaseapp.com",
+    projectId: "jobs-38388",
+    storageBucket: "jobs-38388.firebasestorage.app",
+    messagingSenderId: "70186867403",
+    appId: "1:70186867403:web:cf5d3fc9580eb03c14194e",
+    measurementId: "G-CEC7XCNZ1K"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentUser = null;
+
+  // Следим за авторизацией
+  onAuthStateChanged(auth, (user) => {
+    currentUser = user;
+  });
+
+  // ==========================================
+  // ЛОГИКА ОБЛАКА
+  // ==========================================
+  document.getElementById('btn-save-cloud').addEventListener('click', async () => {
+      if (!currentUser) {
+          alert('Вы не авторизованы! Вернитесь на главную и войдите.');
+          return;
+      }
+      
+      try {
+          const state = getCurrentState(); // Собираем данные
+          
+          // Сохраняем в Firestore по пути: users/ТВОЙ_UID/programs/current
+          await setDoc(doc(db, "users", currentUser.uid, "programs", "current"), state);
+          alert('✅ Программа успешно сохранена в облако! Теперь её видно с любого устройства.');
+      } catch (e) {
+          console.error("Ошибка сохранения:", e);
+          alert('Ошибка при сохранении. Проверь консоль.');
+      }
+  });
+
+  document.getElementById('btn-load-cloud').addEventListener('click', async () => {
+      if (!currentUser) {
+          alert('Вы не авторизованы! Вернитесь на главную и войдите.');
+          return;
+      }
+
+      try {
+          const docRef = doc(db, "users", currentUser.uid, "programs", "current");
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+              const state = docSnap.data();
+              renderState(state); // Отрисовываем данные на экране
+              alert('✅ Программа загружена из облака!');
+          } else {
+              alert('В облаке пока нет сохраненных программ.');
+          }
+      } catch (e) {
+          console.error("Ошибка загрузки:", e);
+          alert('Ошибка при загрузке. Проверь консоль.');
+      }
+  });
+
+</script>
+
+<!-- ОСНОВНОЙ СКРИПТ (ЛОГИКА ТАБЛИЦ) -->
 <script>
     let globalCycleCounter = 0;
     let globalWeekCounter = 0;
     let globalWorkoutCounter = 0;
     let globalExCounter = 0;
     let globalPeriodCounter = 0;
-    let dictionary = {}; // Сюда загрузим справочник
+    let dictionary = {}; 
 
-    // ==========================================
-    // ЗАГРУЗКА СПРАВОЧНИКА
-    // ==========================================
     function loadDictionaryData() {
         const savedDict = localStorage.getItem('trainerDictionary');
         if (savedDict) {
             dictionary = JSON.parse(savedDict);
         } else {
-            // Если справочника нет (пользователь не заходил в library.html), берем дефолтный
             dictionary = {
                 "Спина": ["Становая тяга", "Наклоны", "Румынская тяга", "Подтягивания", "Тяга к поясу", "Тяга к груди", "Тяга верхнего блока", "Тяга горизонтального блока", "Гиперэкстензия", "Пуловер", "Шраги", "Обратная планка"],
                 "Ноги": ["Приседания", "Жим ногами", "Приседания в Гакке", "Выпады", "Разгибания на тренажёре", "Сгибания на тренажёре"],
@@ -118,10 +197,8 @@
         }
     }
 
-    // Генератор HTML для выпадающего списка
     function getSelectOptions(selectedValue = '') {
         let options = `<option value="">-- Выбрать --</option>`;
-        
         for (const [group, exList] of Object.entries(dictionary)) {
             options += `<optgroup label="${group}">`;
             exList.forEach(ex => {
@@ -130,21 +207,20 @@
             });
             options += `</optgroup>`;
         }
-        
-        // Если выбранного значения нет в списке (например, упражнение удалили из справочника), добавляем его, чтобы не потерять текст
         if (selectedValue && !Object.values(dictionary).flat().includes(selectedValue)) {
             options += `<optgroup label="Сохраненные упражнения">`;
             options += `<option value="${selectedValue}" selected>${selectedValue} (удалено из справочника)</option>`;
             options += `</optgroup>`;
         }
-        
         return options;
     }
 
     // ==========================================
-    // СИСТЕМА АВТОСОХРАНЕНИЯ
+    // СБОР И ОТРИСОВКА ДАННЫХ (Универсальные функции)
     // ==========================================
-    function saveState() {
+    
+    // Собирает все данные из DOM в объект
+    function getCurrentState() {
         const state = { cycles: [], periods: [] };
 
         const pmData = [];
@@ -191,15 +267,15 @@
             });
             state.cycles.push(cycleData);
         });
-
-        localStorage.setItem('trainerAppState', JSON.stringify(state));
+        return state;
     }
 
-    function loadState() {
-        const saved = localStorage.getItem('trainerAppState');
-        if (!saved) return false;
-
-        const state = JSON.parse(saved);
+    // Отрисовывает интерфейс по объекту данных
+    function renderState(state) {
+        // Очищаем всё
+        document.getElementById('pmTbody').innerHTML = '';
+        document.getElementById('cyclesContainer').innerHTML = '';
+        showTimelinePlaceholder();
 
         if (state.pm) state.pm.forEach(pm => addPmRow(pm.name, pm.val));
         if (state.periods) state.periods.forEach(p => addPeriodColumn(p.name, p.sub, p.desc));
@@ -248,15 +324,30 @@
             });
         }
         updateAllCalculations();
+    }
+
+    // ==========================================
+    // АВТОСОХРАНЕНИЕ В БРАУЗЕР (LocalStorage)
+    // ==========================================
+    function saveLocalState() {
+        const state = getCurrentState();
+        localStorage.setItem('trainerAppState', JSON.stringify(state));
+    }
+
+    function loadLocalState() {
+        const saved = localStorage.getItem('trainerAppState');
+        if (!saved) return false;
+        const state = JSON.parse(saved);
+        renderState(state);
         return true;
     }
 
-    document.addEventListener('input', saveState);
-    document.addEventListener('change', saveState); // Для select
-    document.addEventListener('click', () => setTimeout(saveState, 50)); 
+    document.addEventListener('input', saveLocalState);
+    document.addEventListener('change', saveLocalState); 
+    document.addEventListener('click', () => setTimeout(saveLocalState, 50)); 
 
     // ==========================================
-    // БАЗОВЫЕ ФУНКЦИИ
+    // БАЗОВЫЕ ФУНКЦИИ ИНТЕРФЕЙСА
     // ==========================================
 
     function addPmRow(name = '', val = '') {
@@ -766,7 +857,7 @@
 
     // --- ГЛОБАЛЬНАЯ МАТЕМАТИКА ---
     function updateAllCalculations() {
-        const pmData = getPmData(); // Получаем все ПМ разом
+        const pmData = getPmData();
 
         document.querySelectorAll('.week-block').forEach(weekBlock => {
             let weekKpsh = 0;
@@ -778,9 +869,7 @@
                 let workoutOt = 0;
 
                 workoutBlock.querySelectorAll('tbody tr').forEach(tr => {
-                    // Получаем имя упражнения из select
                     const exName = tr.querySelector('.ex-name').value;
-                    // Ищем ПМ по этому имени
                     const pm = pmData[exName] || 0;
                     
                     let exKpsh = 0;
@@ -914,10 +1003,11 @@
         el.innerHTML = `<span class="trend-indicator ${colorClass}" title="Разница: ${sign}${diffText}">${arrow}</span>`;
     }
 
-    // Инициализация
+    // Инициализация при загрузке страницы
     window.onload = () => {
-        loadDictionaryData(); // Сначала грузим справочник
-        const isLoaded = loadState();
+        loadDictionaryData(); 
+        const isLoaded = loadLocalState(); // Пока грузим локально, чтобы не потерять данные, если ты просто обновил страницу
+        
         if (!isLoaded) {
             addPmRow(); addPmRow(); addPmRow();
             showTimelinePlaceholder();

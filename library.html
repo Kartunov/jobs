@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Библиотека упражнений</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .dict-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .dict-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .dict-title { font-size: 24px; color: #2c3e50; margin: 0; }
+        
+        .category-block { background: white; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .category-title { font-size: 18px; color: #3498db; margin-top: 0; margin-bottom: 10px; border-bottom: 2px solid #ecf0f1; padding-bottom: 5px; }
+        
+        .ex-list { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+        .ex-item { background: #f8f9fa; border: 1px solid #ddd; padding: 5px 10px; border-radius: 4px; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        .ex-del-btn { background: #e74c3c; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; padding: 0; }
+        .ex-del-btn:hover { background: #c0392b; }
+        
+        .add-ex-form { display: flex; gap: 10px; }
+        .add-ex-input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; outline: none; }
+        .add-ex-input:focus { border-color: #3498db; }
+    </style>
+</head>
+<body>
+
+<div class="top-nav">
+    <a href="index.html" class="btn-link" style="padding: 5px 10px; border-radius: 4px;">← На главную</a>
+    <span style="font-weight: bold; color: #2c3e50;">Справочник упражнений</span>
+    <a href="table.html" class="btn-add" style="text-decoration: none; padding: 5px 10px;">Перейти в редактор ➔</a>
+</div>
+
+<div class="dict-container">
+    <div class="dict-header">
+        <h1 class="dict-title">База упражнений</h1>
+    </div>
+    <div id="dictionaryContainer"></div>
+</div>
+
+<script>
+    // Базовый справочник, который ты скинул
+    const defaultDictionary = {
+        "Спина": ["Становая тяга", "Наклоны", "Румынская тяга", "Подтягивания", "Тяга к поясу", "Тяга к груди", "Тяга верхнего блока", "Тяга горизонтального блока", "Гиперэкстензия", "Пуловер", "Шраги", "Обратная планка"],
+        "Ноги": ["Приседания", "Жим ногами", "Приседания в Гакке", "Выпады", "Разгибания на тренажёре", "Сгибания на тренажёре"],
+        "Грудные": ["Жим штанги", "Жим гантелей", "Бабочка", "Разведение гантелей", "Пуловер"],
+        "Руки": ["Отжимания на брусьях", "Французский жим", "Разгибание руки на лавке", "Разгибания на блоке", "Обратные отжимания", "Сгибания со снарядами", "Сгибания на блоке"],
+        "Плечи": ["Армейский жим", "Жим гантелей", "Жим Арнольда", "Махи на передний пучок", "Махи на задний пучок", "Махи на средний пучок"],
+        "Пресс": ["Скручивания", "Обратные скручивания", "Скручивания в упоре", "Скручивания в стороны", "Планка"],
+        "Ягодицы": ["Приседания", "Румынская тяга", "Ягодичный мостик", "Отведение ноги в кроссовере", "Болгарские выпады", "Сведение в тренажёре", "Разведение в тренажёре"],
+        "Кардио": ["Бег", "Ходьба", "Велотренажёр", "Гребля"]
+    };
+
+    // Загружаем из LocalStorage или берем дефолтный
+    let dictionary = JSON.parse(localStorage.getItem('trainerDictionary')) || defaultDictionary;
+
+    function saveDictionary() {
+        localStorage.setItem('trainerDictionary', JSON.stringify(dictionary));
+    }
+
+    function renderDictionary() {
+        const container = document.getElementById('dictionaryContainer');
+        container.innerHTML = '';
+
+        for (const [category, exercises] of Object.entries(dictionary)) {
+            const block = document.createElement('div');
+            block.className = 'category-block';
+            
+            let exHtml = '';
+            exercises.forEach((ex, index) => {
+                exHtml += `
+                    <div class="ex-item">
+                        <span>${ex}</span>
+                        <button class="ex-del-btn" onclick="deleteExercise('${category}', ${index})" title="Удалить">×</button>
+                    </div>
+                `;
+            });
+
+            block.innerHTML = `
+                <h3 class="category-title">${category}</h3>
+                <div class="ex-list">${exHtml}</div>
+                <div class="add-ex-form">
+                    <input type="text" class="add-ex-input" id="input-${category}" placeholder="Новое упражнение в категорию ${category}...">
+                    <button class="btn-add" onclick="addExercise('${category}')">+ Добавить</button>
+                </div>
+            `;
+            container.appendChild(block);
+        }
+    }
+
+    function addExercise(category) {
+        const input = document.getElementById(`input-${category}`);
+        const val = input.value.trim();
+        if (val && !dictionary[category].includes(val)) {
+            dictionary[category].push(val);
+            saveDictionary();
+            renderDictionary();
+        } else if (dictionary[category].includes(val)) {
+            alert('Такое упражнение уже есть!');
+        }
+    }
+
+    function deleteExercise(category, index) {
+        if(confirm(`Удалить "${dictionary[category][index]}" из справочника?`)) {
+            // Удаляем из списка
+            dictionary[category].splice(index, 1);
+            saveDictionary();
+            renderDictionary();
+        }
+    }
+
+    // Инициализация
+    window.onload = renderDictionary;
+</script>
+</body>
+</html>

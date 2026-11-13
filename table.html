@@ -29,21 +29,21 @@
         .bg-color-2 { background-color: #f0f9e8; }
         .bg-color-3 { background-color: #f4e8f9; }
         .bg-color-4 { background-color: #f9e8e8; }
+
+        /* Стили для select */
+        select.input-ex { width: 130px; padding: 2px; text-align: left; }
     </style>
 </head>
 <body>
 
-<!-- Верхняя навигация -->
 <div class="top-nav">
-    <a href="index.html" class="btn-link" style="padding: 5px 10px; border-radius: 4px;">← Назад в библиотеку</a>
+    <a href="index.html" class="btn-link" style="padding: 5px 10px; border-radius: 4px;">← На главную</a>
     <span style="font-weight: bold; color: #2c3e50;">Конструктор программы</span>
     <div style="width: 120px;"></div> 
 </div>
 
 <div class="layout">
-    <!-- ЛЕВАЯ ПАНЕЛЬ (КОНСТРУКТОР) -->
     <div class="left-panel">
-        
         <!-- Секция ПМ -->
         <div class="pm-section">
             <div>
@@ -86,7 +86,6 @@
         <div>📈</div>
         <div>Здесь будет блок графиков</div>
     </div>
-
 </div>
 
 <script>
@@ -95,11 +94,56 @@
     let globalWorkoutCounter = 0;
     let globalExCounter = 0;
     let globalPeriodCounter = 0;
+    let dictionary = {}; // Сюда загрузим справочник
+
+    // ==========================================
+    // ЗАГРУЗКА СПРАВОЧНИКА
+    // ==========================================
+    function loadDictionaryData() {
+        const savedDict = localStorage.getItem('trainerDictionary');
+        if (savedDict) {
+            dictionary = JSON.parse(savedDict);
+        } else {
+            // Если справочника нет (пользователь не заходил в library.html), берем дефолтный
+            dictionary = {
+                "Спина": ["Становая тяга", "Наклоны", "Румынская тяга", "Подтягивания", "Тяга к поясу", "Тяга к груди", "Тяга верхнего блока", "Тяга горизонтального блока", "Гиперэкстензия", "Пуловер", "Шраги", "Обратная планка"],
+                "Ноги": ["Приседания", "Жим ногами", "Приседания в Гакке", "Выпады", "Разгибания на тренажёре", "Сгибания на тренажёре"],
+                "Грудные": ["Жим штанги", "Жим гантелей", "Бабочка", "Разведение гантелей", "Пуловер"],
+                "Руки": ["Отжимания на брусьях", "Французский жим", "Разгибание руки на лавке", "Разгибания на блоке", "Обратные отжимания", "Сгибания со снарядами", "Сгибания на блоке"],
+                "Плечи": ["Армейский жим", "Жим гантелей", "Жим Арнольда", "Махи на передний пучок", "Махи на задний пучок", "Махи на средний пучок"],
+                "Пресс": ["Скручивания", "Обратные скручивания", "Скручивания в упоре", "Скручивания в стороны", "Планка"],
+                "Ягодицы": ["Приседания", "Румынская тяга", "Ягодичный мостик", "Отведение ноги в кроссовере", "Болгарские выпады", "Сведение в тренажёре", "Разведение в тренажёре"],
+                "Кардио": ["Бег", "Ходьба", "Велотренажёр", "Гребля"]
+            };
+        }
+    }
+
+    // Генератор HTML для выпадающего списка
+    function getSelectOptions(selectedValue = '') {
+        let options = `<option value="">-- Выбрать --</option>`;
+        
+        for (const [group, exList] of Object.entries(dictionary)) {
+            options += `<optgroup label="${group}">`;
+            exList.forEach(ex => {
+                const isSelected = (ex === selectedValue) ? 'selected' : '';
+                options += `<option value="${ex}" ${isSelected}>${ex}</option>`;
+            });
+            options += `</optgroup>`;
+        }
+        
+        // Если выбранного значения нет в списке (например, упражнение удалили из справочника), добавляем его, чтобы не потерять текст
+        if (selectedValue && !Object.values(dictionary).flat().includes(selectedValue)) {
+            options += `<optgroup label="Сохраненные упражнения">`;
+            options += `<option value="${selectedValue}" selected>${selectedValue} (удалено из справочника)</option>`;
+            options += `</optgroup>`;
+        }
+        
+        return options;
+    }
 
     // ==========================================
     // СИСТЕМА АВТОСОХРАНЕНИЯ
     // ==========================================
-    
     function saveState() {
         const state = { cycles: [], periods: [] };
 
@@ -129,7 +173,6 @@
                     workout.querySelectorAll('.workout-tbody tr').forEach(tr => {
                         const exData = {
                             name: tr.querySelector('.ex-name').value,
-                            pm: tr.querySelector('.ex-pm').value,
                             comment: tr.querySelector('.ex-comment') ? tr.querySelector('.ex-comment').value : '',
                             sets: []
                         };
@@ -190,8 +233,7 @@
                             const exId = addExerciseRow(workoutId);
                             const tr = document.getElementById(`ex-${workoutId}-${exId}`);
                             
-                            tr.querySelector('.ex-name').value = ex.name;
-                            tr.querySelector('.ex-pm').value = ex.pm;
+                            tr.querySelector('.ex-name').innerHTML = getSelectOptions(ex.name);
                             if (tr.querySelector('.ex-comment')) tr.querySelector('.ex-comment').value = ex.comment;
                             
                             const setsContainer = tr.querySelector('.scroll-sets');
@@ -210,6 +252,7 @@
     }
 
     document.addEventListener('input', saveState);
+    document.addEventListener('change', saveState); // Для select
     document.addEventListener('click', () => setTimeout(saveState, 50)); 
 
     // ==========================================
@@ -220,8 +263,8 @@
         const tbody = document.querySelector('#pmTbody');
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td><input type="text" class="pm-name" value="${name}" placeholder="Название"></td>
-            <td><input type="number" class="pm-val" value="${val}" placeholder="0"></td>
+            <td><select class="pm-name" onchange="updateAllCalculations()">${getSelectOptions(name)}</select></td>
+            <td><input type="number" class="pm-val" value="${val}" placeholder="0" oninput="updateAllCalculations()"></td>
             <td><button class="btn-del" onclick="delPmRow(this)">x</button></td>
         `;
         tbody.appendChild(tr);
@@ -236,7 +279,7 @@
     function getPmData() {
         const pmData = {};
         document.querySelectorAll('#pmTbody tr').forEach(tr => {
-            const name = tr.querySelector('.pm-name').value.trim();
+            const name = tr.querySelector('.pm-name').value;
             const val = parseFloat(tr.querySelector('.pm-val').value) || 0;
             if (name) pmData[name] = val;
         });
@@ -301,17 +344,8 @@
     function addNewCycle(isCopy = false) {
         const cycleId = globalCycleCounter++;
         const container = document.getElementById('cyclesContainer');
-        
-        // Считаем текущее количество циклов на экране
         const currentCyclesCount = container.children.length;
-        
-        // Формируем название
-        let defaultName = '';
-        if (isCopy) {
-            defaultName = `Цикл ${currentCyclesCount} (копия)`;
-        } else {
-            defaultName = `Цикл ${currentCyclesCount + 1}`;
-        }
+        let defaultName = isCopy ? `Цикл ${currentCyclesCount} (копия)` : `Цикл ${currentCyclesCount + 1}`;
         
         const cycleBlock = document.createElement('div');
         cycleBlock.className = 'cycle-block';
@@ -331,12 +365,8 @@
                 <button class="btn-add" style="margin-top: 5px;" onclick="addNewWeek(${cycleId})">+ Добавить неделю в этот цикл</button>
             </div>
         `;
-        
         container.appendChild(cycleBlock);
-        
-        if (!isCopy) {
-            addNewWeek(cycleId);
-        }
+        if (!isCopy) addNewWeek(cycleId);
         return cycleId;
     }
 
@@ -353,7 +383,7 @@
     }
 
     function deleteCycle(cycleId) {
-        if(confirm('Вы уверены, что хотите удалить этот цикл?')) {
+        if(confirm('Удалить цикл?')) {
             const cycleBlock = document.getElementById(`cycle-${cycleId}`);
             if (cycleBlock) {
                 cycleBlock.remove();
@@ -364,13 +394,12 @@
 
     function copyCycle(sourceCycleId) {
         const newCycleId = globalCycleCounter;
-        addNewCycle(true); // Передаем true, чтобы название сформировалось как "(копия)"
+        addNewCycle(true);
         
         const sourceCycleBlock = document.getElementById(`cycle-${sourceCycleId}`);
         const newCycleBlock = document.getElementById(`cycle-${newCycleId}`);
         const newWeeksContainer = document.getElementById(`weeks-container-${newCycleId}`);
         
-        // Копируем оригинальное название и добавляем "(копия)"
         newCycleBlock.querySelector('.cycle-title-input').value = sourceCycleBlock.querySelector('.cycle-title-input').value + ' (копия)';
         newWeeksContainer.innerHTML = '';
         
@@ -419,8 +448,7 @@
                     <table class="main-table" id="table-${workoutId}">
                         <thead>
                             <tr>
-                                <th width="70">УПР</th>
-                                <th width="50">ПМ</th>
+                                <th width="130">УПР</th>
                                 <th>Подходы (Вес / Подх х Повт)</th>
                                 <th width="50">КПШ</th>
                                 <th width="50">ОИ</th>
@@ -432,7 +460,7 @@
                         <tbody class="workout-tbody"></tbody>
                         <tfoot>
                             <tr style="font-weight: bold; background-color: #f9f9f9;">
-                                <td colspan="3" style="text-align: right; padding-right: 8px; font-size: 10px;">Сумма:</td>
+                                <td colspan="2" style="text-align: right; padding-right: 8px; font-size: 10px;">Сумма:</td>
                                 <td class="w-t-kpsh calc-cell">0<span class="trend-container" id="trend-w-kpsh-${workoutId}"></span></td>
                                 <td class="w-t-oi calc-cell">0<span class="trend-container" id="trend-w-oi-${workoutId}"></span></td>
                                 <td class="w-t-ot calc-cell">0<span class="trend-container" id="trend-w-ot-${workoutId}"></span></td>
@@ -450,7 +478,6 @@
                 
                 sourceWorkout.querySelectorAll('.workout-tbody tr').forEach((sourceTr) => {
                     const exId = globalExCounter++;
-                    const pm = sourceTr.querySelector('.ex-pm').value;
                     const name = sourceTr.querySelector('.ex-name').value;
                     const comment = sourceTr.querySelector('.ex-comment') ? sourceTr.querySelector('.ex-comment').value : '';
                     
@@ -459,8 +486,7 @@
                     newTr.dataset.parentExId = '';
                     
                     newTr.innerHTML = `
-                        <td><input type="text" class="input-ex ex-name" value="${name}" placeholder="Название" oninput="onExNameChange(${workoutId}, ${exId})"></td>
-                        <td><input type="number" class="input-ex ex-pm" value="${pm}" placeholder="ПМ" oninput="updateAllCalculations()"></td>
+                        <td><select class="input-ex ex-name" onchange="onExNameChange(${workoutId}, ${exId})">${getSelectOptions(name)}</select></td>
                         <td>
                             <div class="scroll-sets" id="sets-container-${workoutId}-${exId}"></div>
                             <button class="btn-add-set" style="margin-top:2px;" onclick="addSet(${workoutId}, ${exId})">+ Подход</button>
@@ -478,33 +504,11 @@
                         const weight = sourceSet.querySelector('.set-weight').value;
                         const sets = sourceSet.querySelector('.set-sets').value;
                         const reps = sourceSet.querySelector('.set-reps').value;
-                        
-                        const setDiv = document.createElement('div');
-                        setDiv.className = 'set-block set-inactive';
-                        setDiv.innerHTML = `
-                            <div class="set-col" style="width:100%;">
-                                <div class="set-label">Вес</div>
-                                <input type="number" class="input-set set-weight" value="${weight}" oninput="updateAllCalculations()">
-                            </div>
-                            <div class="set-row">
-                                <div class="set-col">
-                                    <div class="set-label">Подх</div>
-                                    <input type="number" class="input-set set-sets" value="${sets}" oninput="updateAllCalculations()">
-                                </div>
-                                <div class="set-col">
-                                    <div class="set-label">Повт</div>
-                                    <input type="number" class="input-set set-reps" value="${reps}" oninput="updateAllCalculations()">
-                                </div>
-                            </div>
-                            <div class="set-percent">0%</div>
-                            <button class="btn-del" style="margin-top:2px; padding:0px 4px;" onclick="this.parentElement.remove(); updateAllCalculations();">x</button>
-                        `;
-                        newSetsContainer.appendChild(setDiv);
+                        addSet(workoutId, exId, weight, sets, reps);
                     });
                 });
             });
         });
-        
         updateAllCalculations();
     }
 
@@ -547,14 +551,13 @@
             const originalName = document.getElementById(`name-week-${sourceWeekId}`).value;
             document.getElementById(`name-week-${weekId}`).value = originalName + ' (копия)';
         }
-        
         weekBlock.scrollIntoView({ behavior: 'smooth' });
         updateAllCalculations();
         return weekId;
     }
 
     function deleteWeek(weekId) {
-        if(confirm('Вы уверены, что хотите удалить эту неделю?')) {
+        if(confirm('Удалить неделю?')) {
             const weekBlock = document.getElementById(`week-${weekId}`);
             if (weekBlock) {
                 weekBlock.remove();
@@ -600,8 +603,7 @@
                 <table class="main-table" id="table-${workoutId}">
                     <thead>
                         <tr>
-                            <th width="70">УПР</th>
-                            <th width="50">ПМ</th>
+                            <th width="130">УПР</th>
                             <th>Подходы (Вес / Подх х Повт)</th>
                             <th width="50">КПШ</th>
                             <th width="50">ОИ</th>
@@ -613,7 +615,7 @@
                     <tbody class="workout-tbody"></tbody>
                     <tfoot>
                         <tr style="font-weight: bold; background-color: #f9f9f9;">
-                            <td colspan="3" style="text-align: right; padding-right: 8px; font-size: 10px;">Сумма:</td>
+                            <td colspan="2" style="text-align: right; padding-right: 8px; font-size: 10px;">Сумма:</td>
                             <td class="w-t-kpsh calc-cell">0<span class="trend-container" id="trend-w-kpsh-${workoutId}"></span></td>
                             <td class="w-t-oi calc-cell">0<span class="trend-container" id="trend-w-oi-${workoutId}"></span></td>
                             <td class="w-t-ot calc-cell">0<span class="trend-container" id="trend-w-ot-${workoutId}"></span></td>
@@ -631,7 +633,6 @@
             
             sourceWorkout.querySelectorAll('.workout-tbody tr').forEach((sourceTr) => {
                 const exId = globalExCounter++;
-                const pm = sourceTr.querySelector('.ex-pm').value;
                 const name = sourceTr.querySelector('.ex-name').value;
                 const comment = sourceTr.querySelector('.ex-comment') ? sourceTr.querySelector('.ex-comment').value : '';
                 
@@ -640,8 +641,7 @@
                 newTr.dataset.parentExId = sourceTr.id.split('-')[2]; 
                 
                 newTr.innerHTML = `
-                    <td><input type="text" class="input-ex ex-name" value="${name}" placeholder="Название" oninput="onExNameChange(${workoutId}, ${exId})"></td>
-                    <td><input type="number" class="input-ex ex-pm" value="${pm}" placeholder="ПМ" oninput="updateAllCalculations()"></td>
+                    <td><select class="input-ex ex-name" onchange="onExNameChange(${workoutId}, ${exId})">${getSelectOptions(name)}</select></td>
                     <td>
                         <div class="scroll-sets" id="sets-container-${workoutId}-${exId}"></div>
                         <button class="btn-add-set" style="margin-top:2px;" onclick="addSet(${workoutId}, ${exId})">+ Подход</button>
@@ -659,32 +659,10 @@
                     const weight = sourceSet.querySelector('.set-weight').value;
                     const sets = sourceSet.querySelector('.set-sets').value;
                     const reps = sourceSet.querySelector('.set-reps').value;
-                    
-                    const setDiv = document.createElement('div');
-                    setDiv.className = 'set-block set-inactive';
-                    setDiv.innerHTML = `
-                        <div class="set-col" style="width:100%;">
-                            <div class="set-label">Вес</div>
-                            <input type="number" class="input-set set-weight" value="${weight}" oninput="updateAllCalculations()">
-                        </div>
-                        <div class="set-row">
-                            <div class="set-col">
-                                <div class="set-label">Подх</div>
-                                <input type="number" class="input-set set-sets" value="${sets}" oninput="updateAllCalculations()">
-                            </div>
-                            <div class="set-col">
-                                <div class="set-label">Повт</div>
-                                <input type="number" class="input-set set-reps" value="${reps}" oninput="updateAllCalculations()">
-                            </div>
-                        </div>
-                        <div class="set-percent">0%</div>
-                        <button class="btn-del" style="margin-top:2px; padding:0px 4px;" onclick="this.parentElement.remove(); updateAllCalculations();">x</button>
-                    `;
-                    newSetsContainer.appendChild(setDiv);
+                    addSet(workoutId, exId, weight, sets, reps);
                 });
             });
         });
-        
         updateAllCalculations();
     }
 
@@ -704,8 +682,7 @@
             <table class="main-table" id="table-${workoutId}">
                 <thead>
                     <tr>
-                        <th width="70">УПР</th>
-                        <th width="50">ПМ</th>
+                        <th width="130">УПР</th>
                         <th>Подходы (Вес / Подх х Повт)</th>
                         <th width="50">КПШ</th>
                         <th width="50">ОИ</th>
@@ -717,7 +694,7 @@
                 <tbody class="workout-tbody"></tbody>
                 <tfoot>
                     <tr style="font-weight: bold; background-color: #f9f9f9;">
-                        <td colspan="3" style="text-align: right; padding-right: 8px; font-size: 10px;">Сумма:</td>
+                        <td colspan="2" style="text-align: right; padding-right: 8px; font-size: 10px;">Сумма:</td>
                         <td class="w-t-kpsh calc-cell">0<span class="trend-container" id="trend-w-kpsh-${workoutId}"></span></td>
                         <td class="w-t-oi calc-cell">0<span class="trend-container" id="trend-w-oi-${workoutId}"></span></td>
                         <td class="w-t-ot calc-cell">0<span class="trend-container" id="trend-w-ot-${workoutId}"></span></td>
@@ -741,8 +718,7 @@
         const tr = document.createElement('tr');
         tr.id = `ex-${workoutId}-${id}`;
         tr.innerHTML = `
-            <td><input type="text" class="input-ex ex-name" placeholder="Название" oninput="onExNameChange(${workoutId}, ${id})"></td>
-            <td><input type="number" class="input-ex ex-pm" placeholder="ПМ" oninput="updateAllCalculations()"></td>
+            <td><select class="input-ex ex-name" onchange="onExNameChange(${workoutId}, ${id})">${getSelectOptions()}</select></td>
             <td>
                 <div class="scroll-sets" id="sets-container-${workoutId}-${id}"></div>
                 <button class="btn-add-set" style="margin-top:2px;" onclick="addSet(${workoutId}, ${id})">+ Подход</button>
@@ -759,15 +735,6 @@
     }
 
     function onExNameChange(workoutId, id) {
-        const row = document.getElementById(`ex-${workoutId}-${id}`);
-        const nameInput = row.querySelector('.ex-name');
-        const pmInput = row.querySelector('.ex-pm');
-        const pmData = getPmData();
-        
-        const name = nameInput.value.trim();
-        if (pmData[name] !== undefined) {
-            pmInput.value = pmData[name];
-        }
         updateAllCalculations();
     }
 
@@ -799,6 +766,8 @@
 
     // --- ГЛОБАЛЬНАЯ МАТЕМАТИКА ---
     function updateAllCalculations() {
+        const pmData = getPmData(); // Получаем все ПМ разом
+
         document.querySelectorAll('.week-block').forEach(weekBlock => {
             let weekKpsh = 0;
             let weekOt = 0;
@@ -809,7 +778,11 @@
                 let workoutOt = 0;
 
                 workoutBlock.querySelectorAll('tbody tr').forEach(tr => {
-                    const pm = parseFloat(tr.querySelector('.ex-pm').value) || 0;
+                    // Получаем имя упражнения из select
+                    const exName = tr.querySelector('.ex-name').value;
+                    // Ищем ПМ по этому имени
+                    const pm = pmData[exName] || 0;
+                    
                     let exKpsh = 0;
                     let exOt = 0;
 
@@ -943,6 +916,7 @@
 
     // Инициализация
     window.onload = () => {
+        loadDictionaryData(); // Сначала грузим справочник
         const isLoaded = loadState();
         if (!isLoaded) {
             addPmRow(); addPmRow(); addPmRow();

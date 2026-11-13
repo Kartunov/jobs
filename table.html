@@ -5,6 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Редактор программ</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Стили для таймлайна */
+        .timeline-section { background: white; padding: 10px; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); margin-bottom: 10px; overflow-x: auto; }
+        .timeline-table { border-collapse: collapse; width: 100%; min-width: 500px; table-layout: fixed;}
+        .timeline-table td, .timeline-table th { border: 1px solid #ccc; padding: 4px; text-align: center; vertical-align: top; }
+        
+        .timeline-name-input { font-weight: bold; text-align: center; border: 1px solid transparent; background: transparent; width: 100%; outline: none; font-family: inherit; font-size: 12px; color: #333;}
+        .timeline-name-input:focus { border-color: #3498db; background: white; }
+        
+        .timeline-sub-input { text-align: center; border: 1px solid transparent; background: transparent; width: 100%; outline: none; font-family: inherit; font-size: 11px; color: #555;}
+        .timeline-sub-input:focus { border-color: #3498db; background: white; }
+        
+        .timeline-desc-input { text-align: left; border: 1px solid transparent; background: transparent; width: 100%; outline: none; font-family: inherit; font-size: 11px; color: #666; resize: vertical; min-height: 40px;}
+        .timeline-desc-input:focus { border-color: #3498db; background: white; }
+        
+        .timeline-del-btn { background: transparent; color: #e74c3c; border: none; cursor: pointer; font-weight: bold; font-size: 16px; padding: 0; float: right; line-height: 1;}
+        .timeline-del-btn:hover { color: #c0392b; }
+        
+        /* Пастельные цвета для колонок */
+        .bg-color-0 { background-color: #e8f4f8; }
+        .bg-color-1 { background-color: #f9f0e8; }
+        .bg-color-2 { background-color: #f0f9e8; }
+        .bg-color-3 { background-color: #f4e8f9; }
+        .bg-color-4 { background-color: #f9e8e8; }
+    </style>
 </head>
 <body>
 
@@ -12,12 +37,13 @@
 <div class="top-nav">
     <a href="index.html" class="btn-link" style="padding: 5px 10px; border-radius: 4px;">← Назад в библиотеку</a>
     <span style="font-weight: bold; color: #2c3e50;">Конструктор программы</span>
-    <div style="width: 120px;"></div> <!-- Заглушка для центрирования -->
+    <div style="width: 120px;"></div> 
 </div>
 
 <div class="layout">
     <!-- ЛЕВАЯ ПАНЕЛЬ (КОНСТРУКТОР) -->
     <div class="left-panel">
+        
         <!-- Секция ПМ -->
         <div class="pm-section">
             <div>
@@ -30,6 +56,25 @@
                 </table>
                 <button class="btn-add" style="margin-top: 4px;" onclick="addPmRow()">+ Добавить ПМ</button>
             </div>
+        </div>
+
+        <!-- ТАЙМЛАЙН ПЕРИОДОВ -->
+        <div class="timeline-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="font-weight:bold; font-size:11px;">Структура макроцикла (Периоды)</div>
+                <button class="btn-add" style="padding: 2px 8px; font-size: 11px;" onclick="addPeriodColumn()">+ Добавить период</button>
+            </div>
+            
+            <table class="timeline-table" id="timelineTable">
+                <tbody>
+                    <!-- Строка с названиями -->
+                    <tr id="timelineNamesRow"></tr>
+                    <!-- Строка с уточнениями (недели/даты) -->
+                    <tr id="timelineSubRow"></tr>
+                    <!-- Строка с описанием -->
+                    <tr id="timelineDescRow"></tr>
+                </tbody>
+            </table>
         </div>
 
         <!-- Контейнер для циклов -->
@@ -48,13 +93,11 @@
 </div>
 
 <script>
-    // ВЕСЬ ТВОЙ JS КОД ИЗ ПРЕДЫДУЩЕГО ШАГА ВСТАВЬ СЮДА
-    // (Он не меняется, копируй всё от `let globalCycleCounter = 0;` до конца скрипта)
-    
     let globalCycleCounter = 0;
     let globalWeekCounter = 0;
     let globalWorkoutCounter = 0;
     let globalExCounter = 0;
+    let globalPeriodCounter = 0;
 
     // --- УПРАВЛЕНИЕ ПМ ---
     function addPmRow(name = '', val = '') {
@@ -82,6 +125,76 @@
             if (name) pmData[name] = val;
         });
         return pmData;
+    }
+
+    // --- УПРАВЛЕНИЕ ТАЙМЛАЙНОМ (ПЕРИОДЫ) ---
+    function addPeriodColumn() {
+        const id = globalPeriodCounter++;
+        const bgClass = `bg-color-${id % 5}`;
+
+        // Убираем заглушку "Нет добавленных периодов", если она есть
+        removeTimelinePlaceholder();
+
+        // 1. Название
+        const nameTd = document.createElement('td');
+        nameTd.className = bgClass;
+        nameTd.style.position = 'relative';
+        nameTd.innerHTML = `
+            <button class="timeline-del-btn" onclick="removePeriodColumn(${id})" title="Удалить период">×</button>
+            <input type="text" class="timeline-name-input" value="Период ${id + 1}" placeholder="Название">
+        `;
+        document.getElementById('timelineNamesRow').appendChild(nameTd);
+
+        // 2. Подзаголовок
+        const subTd = document.createElement('td');
+        subTd.className = bgClass;
+        subTd.innerHTML = `<input type="text" class="timeline-sub-input" placeholder="Напр: 5 недель">`;
+        document.getElementById('timelineSubRow').appendChild(subTd);
+
+        // 3. Описание
+        const descTd = document.createElement('td');
+        descTd.className = bgClass;
+        descTd.innerHTML = `<textarea class="timeline-desc-input" placeholder="Описание..."></textarea>`;
+        document.getElementById('timelineDescRow').appendChild(descTd);
+    }
+
+    // Удаление периода по ID (находим по индексу)
+    function removePeriodColumn(id) {
+        // Находим ячейку названия, чтобы получить её индекс
+        const nameRow = document.getElementById('timelineNamesRow');
+        const tdToRemove = nameRow.querySelector(`.bg-color-${id % 5}`); // Ищем по цвету, так как он уникален для ID
+        // Но надежнее найти по кнопке. Давай передадим индекс напрямую.
+    }
+
+    // Переделаем удаление через передачу самой кнопки
+    function deletePeriod(btn) {
+        const td = btn.closest('td');
+        const index = Array.from(td.parentNode.children).indexOf(td);
+        
+        // Удаляем ячейку из каждой строки по её индексу
+        document.getElementById('timelineNamesRow').children[index].remove();
+        document.getElementById('timelineSubRow').children[index].remove();
+        document.getElementById('timelineDescRow').children[index].remove();
+
+        // Если удалили всё, возвращаем заглушку
+        if (document.getElementById('timelineNamesRow').children.length === 0) {
+            showTimelinePlaceholder();
+        }
+    }
+
+    function removeTimelinePlaceholder() {
+        const namesRow = document.getElementById('timelineNamesRow');
+        if (namesRow.children.length === 1 && namesRow.children[0].classList.contains('empty-placeholder')) {
+            namesRow.innerHTML = '';
+            document.getElementById('timelineSubRow').innerHTML = '';
+            document.getElementById('timelineDescRow').innerHTML = '';
+        }
+    }
+
+    function showTimelinePlaceholder() {
+        document.getElementById('timelineNamesRow').innerHTML = '<td class="empty-placeholder" colspan="1" style="color:#aaa; font-style:italic; text-align:center;">Нет добавленных периодов</td>';
+        document.getElementById('timelineSubRow').innerHTML = '<td style="border:none;"></td>';
+        document.getElementById('timelineDescRow').innerHTML = '<td style="border:none;"></td>';
     }
 
     // --- УПРАВЛЕНИЕ ЦИКЛАМИ ---
@@ -722,9 +835,13 @@
 
     // Инициализация
     window.onload = () => {
-        addPmRow();
-        addPmRow();
-        addPmRow();
+        // Инициализация ПМ
+        addPmRow(); addPmRow(); addPmRow();
+        
+        // Таймлайн изначально пустой
+        showTimelinePlaceholder();
+
+        // Инициализация циклов
         addNewCycle();
     };
 </script>

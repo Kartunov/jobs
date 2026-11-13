@@ -1,0 +1,110 @@
+/* === ОБЩИЕ СТИЛИ === */
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 10px; font-size: 13px; }
+button { cursor: pointer; border: none; border-radius: 4px; padding: 6px 12px; font-weight: bold; transition: 0.2s; font-family: inherit; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: white; }
+.btn-add { background-color: #3498db; }
+.btn-add:hover { background-color: #2980b9; }
+.btn-del { background-color: #e74c3c; padding: 2px 6px; font-size: 11px; }
+.btn-del:hover { background-color: #c0392b; }
+.btn-add-set { background-color: #2ecc71; padding: 2px 6px; font-size: 11px; }
+.btn-add-set:hover { background-color: #27ae60; }
+.btn-cycle { background-color: #2c3e50; font-size: 14px; padding: 10px 15px; width: 100%; margin-bottom: 20px; border-radius: 6px; }
+.btn-cycle:hover { background-color: #1a252f; }
+.btn-copy { background-color: #f39c12; font-size: 11px; padding: 3px 8px; }
+.btn-copy:hover { background-color: #e67e22; }
+.btn-delete-item { background-color: #e74c3c; font-size: 11px; padding: 3px 8px; }
+.btn-delete-item:hover { background-color: #c0392b; }
+.btn-link { background: transparent; color: #3498db; border: 1px solid #3498db; text-decoration: none;}
+.btn-link:hover { background: #3498db; color: white; }
+
+/* === ГЛАВНАЯ (БИБЛИОТЕКА) === */
+.library-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.library-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.library-title { font-size: 28px; color: #2c3e50; margin: 0; }
+.folders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+.folder-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #e1e4e6; transition: 0.2s; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; }
+.folder-card:hover { transform: translateY(-5px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); border-color: #3498db; }
+.folder-icon { font-size: 40px; margin-bottom: 10px; }
+.folder-name { font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
+.folder-stats { font-size: 12px; color: #7f8c8d; }
+
+/* === РЕДАКТОР (TABLE.HTML) === */
+.layout { display: flex; gap: 20px; max-width: 1600px; margin: 0 auto; height: 95vh; }
+.left-panel { flex: 0 0 60%; overflow-y: auto; padding-right: 10px; }
+.right-panel { flex: 1; background: #fff; border-radius: 8px; border: 2px dashed #bdc3c7; display: flex; justify-content: center; align-items: center; color: #95a5a6; font-size: 18px; font-weight: bold; position: sticky; top: 10px; height: calc(100vh - 20px); flex-direction: column; gap: 10px;}
+.top-nav { max-width: 1600px; margin: 0 auto 10px auto; display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 15px; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); }
+
+/* Таблица ПМ */
+.pm-section { background: white; padding: 8px 10px; border-radius: 6px; box-shadow: 0 1px 5px rgba(0,0,0,0.05); margin-bottom: 10px; display: flex; gap: 15px; align-items: flex-start; }
+.pm-table { border-collapse: collapse; font-size: 11px;}
+.pm-table th, .pm-table td { border: 1px solid #ddd; padding: 2px 6px; text-align: center; }
+.pm-table input { width: 60px; border: none; text-align: center; font-size: 11px; outline: none; }
+
+/* Циклы */
+.cycle-block { background: #fff; border-radius: 6px; padding: 10px; margin-bottom: 15px; border: 1px solid #bdc3c7; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+.cycle-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+.cycle-title-wrapper { display: flex; align-items: center; gap: 8px; }
+.cycle-title-input { font-size: 15px; font-weight: bold; color: #2c3e50; border: 1px solid transparent; background: transparent; padding: 1px 4px; border-radius: 4px; width: 200px; font-family: inherit;}
+.cycle-title-input:hover { border-color: #ccc; background: #f9f9f9; }
+.cycle-title-input:focus { border-color: #3498db; background: #fff; outline: none; }
+
+/* Недели */
+.week-block { background: #f4f6f7; border-radius: 4px; padding: 8px; margin-bottom: 10px; border: 1px solid #e1e4e6; }
+.week-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.week-title-wrapper { display: flex; align-items: center; gap: 8px; }
+.week-title { font-size: 13px; font-weight: bold; color: #2c3e50; margin: 0; cursor: pointer; display: flex; align-items: center; gap: 4px;}
+.week-title:hover { color: #3498db; }
+.week-name-input { font-size: 13px; font-weight: bold; color: #2c3e50; border: 1px solid transparent; background: transparent; padding: 1px 4px; border-radius: 4px; width: 150px; font-family: inherit;}
+.week-name-input:hover { border-color: #ccc; background: white; }
+.week-name-input:focus { border-color: #3498db; background: white; outline: none; }
+.week-summary { background: #fff; padding: 3px 8px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; gap: 10px; font-weight: bold; font-size: 11px; align-items: center;}
+.week-summary span.main-val { color: #e67e22; }
+
+/* Стрелочки динамики */
+.trend-indicator { font-size: 10px; margin-left: 2px; cursor: help; position: relative; display: inline-block; }
+.trend-up { color: #27ae60; }
+.trend-down { color: #c0392b; }
+
+/* Основная таблица (тренировка) */
+.workout-block { background: white; padding: 8px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 8px; overflow-x: auto; }
+.workout-header { display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center;}
+.workout-title-input { font-size: 12px; font-weight: bold; color: #34495e; border: 1px solid transparent; background: transparent; padding: 1px 4px; border-radius: 3px; width: 150px; font-family: inherit;}
+.workout-title-input:hover { border-color: #ccc; background: #f9f9f9;}
+.workout-title-input:focus { border-color: #3498db; background: #fff; outline: none; }
+
+.main-table { border-collapse: collapse; width: 100%; min-width: 700px; }
+.main-table th, .main-table td { border: 1px solid #ccc; padding: 2px; text-align: center; vertical-align: middle; }
+.main-table th { background-color: #f8f9fa; font-size: 10px; color: #555;}
+
+/* Поля ввода */
+.input-ex { width: 70px; padding: 2px 4px; border: 1px solid #ccc; border-radius: 3px; text-align: center; font-size: 11px;}
+.input-ex.comment { width: 120px; text-align: left; }
+.input-set { width: 28px; padding: 2px; border: 1px solid #ccc; border-radius: 3px; text-align: center; font-size: 10px; }
+
+/* Блок подхода (КВАДРАТНЫЙ) */
+.scroll-sets { display: flex; flex-wrap: nowrap; gap: 4px; overflow-x: auto; padding-bottom: 2px; }
+.set-block { display: flex; flex-direction: column; align-items: center; background: #fdfbfb; padding: 3px; border-radius: 4px; border: 1px dashed #ccc; min-width: 50px; transition: 0.2s; }
+.set-label { font-size: 8px; color: #888; text-transform: uppercase; margin-bottom: 1px;}
+.set-row { display: flex; justify-content: space-between; width: 100%; gap: 2px; }
+.set-col { display: flex; flex-direction: column; align-items: center; flex: 1; }
+.calc-cell { font-weight: bold; font-size: 11px; color: #e67e22; }
+
+/* Цвета для подходов */
+.set-percent { font-size: 9px; font-weight: bold; padding: 1px 2px; margin-top: 2px; border-radius: 2px; }
+.set-inactive { border-color: #eee; background-color: #fafafa; opacity: 0.6; }
+.set-inactive .set-percent { color: #999; background: #eee; }
+.set-green { border-color: #2ecc71; background-color: #f0fdf4; }
+.set-green .set-percent { color: #27ae60; background: #d4f5e2; }
+.set-yellow { border-color: #f1c40f; background-color: #fffdf0; }
+.set-yellow .set-percent { color: #d35400; background: #fcf3cf; }
+.set-red { border-color: #e74c3c; background-color: #fdf2f1; }
+.set-red .set-percent { color: #c0392b; background: #fadbd8; }
+.set-black { border-color: #2c3e50; background-color: #f4f6f7; }
+.set-black .set-percent { color: #fff; background: #2c3e50; }
+
+.hidden { display: none !important; }
+.collapse-icon { font-size: 10px; color: #7f8c8d; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #aaa; }

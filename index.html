@@ -5,12 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Библиотека тренера</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .auth-container { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; }
+        .user-profile { display: flex; align-items: center; gap: 10px; background: white; padding: 5px 15px; border-radius: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 14px;}
+        .user-avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #3498db; }
+        .btn-logout { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px;}
+        .btn-logout:hover { background: #c0392b; }
+    </style>
 </head>
 <body>
 
 <div class="library-container">
     <div class="library-header">
         <h1 class="library-title">Панель управления</h1>
+        
+        <!-- Блок для авторизации -->
+        <div class="auth-container" id="auth-container">
+            <!-- Сюда скрипт вставит кнопку входа или профиль -->
+            <span style="color: #7f8c8d; font-size: 14px;">Загрузка...</span>
+        </div>
     </div>
 
     <h2 style="color: #7f8c8d; font-size: 16px; margin-bottom: 15px; font-weight: normal;">Инструменты</h2>
@@ -31,6 +44,69 @@
         </a>
     </div>
 </div>
+
+<!-- Подключаем Firebase (модульная версия v13) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
+
+  // Твой конфиг, который ты прислал. Я уже всё вставил.
+  const firebaseConfig = {
+    apiKey: "AIzaSyCU418F9p5qxpEFIeHGNSQD17z155Tqtf8",
+    authDomain: "jobs-38388.firebaseapp.com",
+    projectId: "jobs-38388",
+    storageBucket: "jobs-38388.firebasestorage.app",
+    messagingSenderId: "70186867403",
+    appId: "1:70186867403:web:cf5d3fc9580eb03c14194e",
+    measurementId: "G-CEC7XCNZ1K"
+  };
+
+  // Инициализация Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+
+  const authContainer = document.getElementById('auth-container');
+
+  // Функция для отрисовки интерфейса
+  function updateUI(user) {
+    if (user) {
+      // Если вошел
+      authContainer.innerHTML = `
+        <div class="user-profile">
+          <img src="${user.photoURL || 'https://via.placeholder.com/30'}" alt="Avatar" class="user-avatar">
+          <span>${user.displayName || user.email}</span>
+          <button class="btn-logout" id="logout-btn">Выйти</button>
+        </div>
+      `;
+      document.getElementById('logout-btn').addEventListener('click', () => {
+        signOut(auth).catch((error) => console.error('Ошибка выхода:', error));
+      });
+      
+      // Сохраняем UID для других страниц
+      localStorage.setItem('trainerUID', user.uid);
+
+    } else {
+      // Если не вошел
+      authContainer.innerHTML = `
+        <button class="btn-add" id="login-btn">Войти через Google</button>
+      `;
+      document.getElementById('login-btn').addEventListener('click', () => {
+        signInWithPopup(auth, provider).catch((error) => {
+          console.error('Ошибка входа:', error);
+          alert('Не удалось войти. Проверь консоль (F12).');
+        });
+      });
+      
+      localStorage.removeItem('trainerUID');
+    }
+  }
+
+  // Следим за статусом авторизации
+  onAuthStateChanged(auth, (user) => {
+    updateUI(user);
+  });
+</script>
 
 </body>
 </html>

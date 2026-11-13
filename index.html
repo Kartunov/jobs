@@ -11,6 +11,15 @@
         .user-avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #3498db; }
         .btn-logout { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px;}
         .btn-logout:hover { background: #c0392b; }
+        
+        /* Стили для клиентов */
+        .client-card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e1e4e6; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s; text-decoration: none; color: inherit; }
+        .client-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-color: #3498db; }
+        .client-avatar { width: 50px; height: 50px; border-radius: 50%; background: #ecf0f1; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #7f8c8d; }
+        .client-info h3 { margin: 0 0 5px 0; color: #2c3e50; }
+        .client-info p { margin: 0; color: #7f8c8d; font-size: 13px; }
+        
+        .empty-state { text-align: center; padding: 40px; background: white; border-radius: 8px; border: 2px dashed #ccc; color: #7f8c8d; }
     </style>
 </head>
 <body>
@@ -19,38 +28,44 @@
     <div class="library-header">
         <h1 class="library-title">Панель управления</h1>
         
-        <!-- Блок для авторизации -->
         <div class="auth-container" id="auth-container">
-            <!-- Сюда скрипт вставит кнопку входа или профиль -->
             <span style="color: #7f8c8d; font-size: 14px;">Загрузка...</span>
         </div>
     </div>
 
-    <h2 style="color: #7f8c8d; font-size: 16px; margin-bottom: 15px; font-weight: normal;">Инструменты</h2>
+    <!-- БЛОК: СПОРТСМЕНЫ -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 30px;">
+        <h2 style="color: #2c3e50; font-size: 18px; margin: 0;">Мои спортсмены</h2>
+        <button class="btn-add" id="add-client-btn" style="display: none;">+ Добавить клиента</button>
+    </div>
     
+    <div id="clients-container" class="folders-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+        <!-- Сюда загрузятся клиенты -->
+    </div>
+
+    <!-- БЛОК: ИНСТРУМЕНТЫ -->
+    <h2 style="color: #2c3e50; font-size: 18px; margin-top: 40px; margin-bottom: 15px;">Инструменты</h2>
     <div class="folders-grid">
-        <!-- Карточка: Справочник -->
         <a href="library.html" class="folder-card" style="text-decoration: none;">
             <div class="folder-icon">📚</div>
             <div class="folder-name">Справочник упражнений</div>
             <div class="folder-stats">База упражнений по группам мышц</div>
         </a>
 
-        <!-- Карточка: Редактор -->
+        <!-- Редактор пока без привязки к клиенту (черновик) -->
         <a href="table.html" class="folder-card" style="text-decoration: none;">
             <div class="folder-icon">📝</div>
-            <div class="folder-name">Редактор программ</div>
-            <div class="folder-stats">Конструктор тренировок и циклов</div>
+            <div class="folder-name">Редактор (Черновик)</div>
+            <div class="folder-stats">Свободный конструктор программ</div>
         </a>
     </div>
 </div>
 
-<!-- Подключаем Firebase (модульная версия v13) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js";
 
-  // Твой конфиг, который ты прислал. Я уже всё вставил.
   const firebaseConfig = {
     apiKey: "AIzaSyCU418F9p5qxpEFIeHGNSQD17z155Tqtf8",
     authDomain: "jobs-38388.firebaseapp.com",
@@ -61,17 +76,21 @@
     measurementId: "G-CEC7XCNZ1K"
   };
 
-  // Инициализация Firebase
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db = getFirestore(app);
   const provider = new GoogleAuthProvider();
 
   const authContainer = document.getElementById('auth-container');
+  const clientsContainer = document.getElementById('clients-container');
+  const addClientBtn = document.getElementById('add-client-btn');
 
-  // Функция для отрисовки интерфейса
+  let currentUser = null;
+
+  // Функция обновления интерфейса
   function updateUI(user) {
+    currentUser = user;
     if (user) {
-      // Если вошел
       authContainer.innerHTML = `
         <div class="user-profile">
           <img src="${user.photoURL || 'https://via.placeholder.com/30'}" alt="Avatar" class="user-avatar">
@@ -79,33 +98,74 @@
           <button class="btn-logout" id="logout-btn">Выйти</button>
         </div>
       `;
-      document.getElementById('logout-btn').addEventListener('click', () => {
-        signOut(auth).catch((error) => console.error('Ошибка выхода:', error));
-      });
+      document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
       
-      // Сохраняем UID для других страниц
-      localStorage.setItem('trainerUID', user.uid);
-
+      addClientBtn.style.display = 'block';
+      loadClients(user.uid); // Загружаем клиентов
     } else {
-      // Если не вошел
-      authContainer.innerHTML = `
-        <button class="btn-add" id="login-btn">Войти через Google</button>
-      `;
-      document.getElementById('login-btn').addEventListener('click', () => {
-        signInWithPopup(auth, provider).catch((error) => {
-          console.error('Ошибка входа:', error);
-          alert('Не удалось войти. Проверь консоль (F12).');
-        });
-      });
-      
-      localStorage.removeItem('trainerUID');
+      authContainer.innerHTML = `<button class="btn-add" id="login-btn">Войти через Google</button>`;
+      document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, provider));
+      clientsContainer.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;">Войдите, чтобы увидеть список спортсменов.</div>`;
+      addClientBtn.style.display = 'none';
     }
   }
 
-  // Следим за статусом авторизации
-  onAuthStateChanged(auth, (user) => {
-    updateUI(user);
+  // Загрузка клиентов из Firestore
+  async function loadClients(uid) {
+    clientsContainer.innerHTML = '<div style="padding: 20px; color: #7f8c8d;">Загрузка клиентов...</div>';
+    try {
+      const clientsRef = collection(db, "users", uid, "clients");
+      const querySnapshot = await getDocs(clientsRef);
+      
+      if (querySnapshot.empty) {
+        clientsContainer.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;">У вас пока нет клиентов. Нажмите "+ Добавить клиента".</div>`;
+        return;
+      }
+
+      let html = '';
+      querySnapshot.forEach((doc) => {
+        const client = doc.data();
+        // Берем первую букву имени для аватарки
+        const initial = client.name ? client.name.charAt(0).toUpperCase() : '?';
+        
+        // Ссылка ведет на новую страницу client.html с ID клиента в параметрах
+        html += `
+          <a href="client.html?id=${doc.id}" class="client-card">
+            <div class="client-avatar">${initial}</div>
+            <div class="client-info">
+              <h3>${client.name}</h3>
+              <p>Нажмите, чтобы открыть программы</p>
+            </div>
+          </a>
+        `;
+      });
+      clientsContainer.innerHTML = html;
+
+    } catch (e) {
+      console.error("Ошибка загрузки клиентов: ", e);
+      clientsContainer.innerHTML = '<div style="color: red;">Ошибка загрузки клиентов.</div>';
+    }
+  }
+
+  // Добавление клиента
+  addClientBtn.addEventListener('click', async () => {
+    if (!currentUser) return;
+    const name = prompt("Введите имя нового спортсмена:");
+    if (name && name.trim() !== '') {
+      try {
+        await addDoc(collection(db, "users", currentUser.uid, "clients"), {
+          name: name.trim(),
+          createdAt: new Date()
+        });
+        loadClients(currentUser.uid); // Перезагружаем список
+      } catch (e) {
+        console.error("Ошибка добавления: ", e);
+        alert("Не удалось добавить клиента.");
+      }
+    }
   });
+
+  onAuthStateChanged(auth, updateUI);
 </script>
 
 </body>

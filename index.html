@@ -10,45 +10,25 @@
 
 <div class="library-container">
     <div class="library-header">
-        <h1 class="library-title">Моя библиотека</h1>
-        <div>
-            <a href="table.html" class="btn-add" style="text-decoration: none;">+ Создать новый план (Редактор)</a>
-        </div>
+        <h1 class="library-title">Панель управления</h1>
     </div>
 
-    <h2 style="color: #7f8c8d; font-size: 16px; margin-bottom: 15px; font-weight: normal;">Папки спортсменов</h2>
+    <h2 style="color: #7f8c8d; font-size: 16px; margin-bottom: 15px; font-weight: normal;">Инструменты</h2>
     
     <div class="folders-grid">
-        <!-- Карточка 1 -->
-        <div class="folder-card" onclick="alert('В будущем здесь будет открываться список программ Максима')">
-            <div class="folder-icon">📁</div>
-            <div class="folder-name">Максим</div>
-            <div class="folder-stats">3 программы (в разработке)</div>
-        </div>
+        <!-- Карточка: Справочник -->
+        <a href="library.html" class="folder-card" style="text-decoration: none;">
+            <div class="folder-icon">📚</div>
+            <div class="folder-name">Справочник упражнений</div>
+            <div class="folder-stats">База упражнений по группам мышц</div>
+        </a>
 
-        <!-- Карточка 2 -->
-        <div class="folder-card" onclick="alert('В будущем здесь будет открываться список программ Пети')">
-            <div class="folder-icon">📁</div>
-            <div class="folder-name">Петя</div>
-            <div class="folder-stats">1 программа (в разработке)</div>
-        </div>
-
-        <!-- Карточка 3 -->
-        <div class="folder-card" style="border-style: dashed; opacity: 0.7;" onclick="alert('Скоро можно будет добавлять клиентов')">
-            <div class="folder-icon">➕</div>
-            <div class="folder-name">Добавить клиента</div>
-        </div>
-    </div>
-
-    <h2 style="color: #7f8c8d; font-size: 16px; margin-top: 30px; margin-bottom: 15px; font-weight: normal;">Инструменты</h2>
-    
-    <div class="folders-grid">
-        <!-- База упражнений -->
-        <div class="folder-card" onclick="alert('Здесь будет справочник упражнений с привязкой ПМ')">
-            <div class="folder-icon">🏋️‍♂️</div>
-            <div class="folder-name">База упражнений</div>
-            <div class="folder-stats">Справочник (в разработке)</div>
-        </div>
+        <!-- Карточка: Редактор -->
+        <a href="table.html" class="folder-card" style="text-decoration: none;">
+            <div class="folder-icon">📝</div>
+            <div class="folder-name">Редактор программ</div>
+            <div class="folder-stats">Конструктор тренировок и циклов</div>
+        </a>
     </div>
 </div>
 

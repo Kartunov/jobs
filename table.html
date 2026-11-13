@@ -20,7 +20,7 @@
         .timeline-desc-input { text-align: left; border: 1px solid transparent; background: transparent; width: 100%; outline: none; font-family: inherit; font-size: 11px; color: #666; resize: vertical; min-height: 40px;}
         .timeline-desc-input:focus { border-color: #3498db; background: white; }
         
-        .timeline-del-btn { background: transparent; color: #e74c3c; border: none; cursor: pointer; font-weight: bold; font-size: 16px; padding: 0; float: right; line-height: 1;}
+        .timeline-del-btn { background: transparent; color: #e74c3c; border: none; cursor: pointer; font-weight: bold; font-size: 16px; padding: 0; float: right; line-height:1; }
         .timeline-del-btn:hover { color: #c0392b; }
         
         /* Пастельные цвета для колонок */
@@ -140,7 +140,7 @@
         nameTd.className = bgClass;
         nameTd.style.position = 'relative';
         nameTd.innerHTML = `
-            <button class="timeline-del-btn" onclick="removePeriodColumn(${id})" title="Удалить период">×</button>
+            <button class="timeline-del-btn" onclick="deletePeriod(this)" title="Удалить период">×</button>
             <input type="text" class="timeline-name-input" value="Период ${id + 1}" placeholder="Название">
         `;
         document.getElementById('timelineNamesRow').appendChild(nameTd);
@@ -158,25 +158,19 @@
         document.getElementById('timelineDescRow').appendChild(descTd);
     }
 
-    // Удаление периода по ID (находим по индексу)
-    function removePeriodColumn(id) {
-        // Находим ячейку названия, чтобы получить её индекс
-        const nameRow = document.getElementById('timelineNamesRow');
-        const tdToRemove = nameRow.querySelector(`.bg-color-${id % 5}`); // Ищем по цвету, так как он уникален для ID
-        // Но надежнее найти по кнопке. Давай передадим индекс напрямую.
-    }
-
-    // Переделаем удаление через передачу самой кнопки
+    // ПРАВИЛЬНОЕ УДАЛЕНИЕ ПЕРИОДА
     function deletePeriod(btn) {
+        // 1. Находим ячейку, в которой лежит кнопка
         const td = btn.closest('td');
+        // 2. Находим её порядковый номер (индекс)
         const index = Array.from(td.parentNode.children).indexOf(td);
         
-        // Удаляем ячейку из каждой строки по её индексу
+        // 3. Удаляем ячейку с этим же индексом из всех трёх строк
         document.getElementById('timelineNamesRow').children[index].remove();
         document.getElementById('timelineSubRow').children[index].remove();
         document.getElementById('timelineDescRow').children[index].remove();
 
-        // Если удалили всё, возвращаем заглушку
+        // 4. Если удалили всё, возвращаем заглушку
         if (document.getElementById('timelineNamesRow').children.length === 0) {
             showTimelinePlaceholder();
         }
@@ -835,13 +829,8 @@
 
     // Инициализация
     window.onload = () => {
-        // Инициализация ПМ
         addPmRow(); addPmRow(); addPmRow();
-        
-        // Таймлайн изначально пустой
         showTimelinePlaceholder();
-
-        // Инициализация циклов
         addNewCycle();
     };
 </script>

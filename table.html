@@ -101,7 +101,6 @@
         <button class="btn-cycle" onclick="addNewCycle()">+ Создать новый цикл (макро/мезо)</button>
     </div>
 
-    <!-- ПРАВАЯ ПАНЕЛЬ (ГРАФИКИ) -->
     <div class="right-panel">
         <div class="charts-container">
             
@@ -448,8 +447,6 @@
         const c = document.getElementById(`cycle-content-${id}`), i = document.getElementById(`icon-cycle-${id}`);
         c.classList.toggle('hidden'); i.textContent = c.classList.contains('hidden') ? '►' : '▼';
     }
-    
-    // ФИКС: Вернули полноценное копирование цикла
     function copyCycle(sourceCycleId) {
         const newCycleId = globalCycleCounter;
         addNewCycle(true);
@@ -569,8 +566,6 @@
         const c = document.getElementById(`week-content-${id}`), i = document.getElementById(`icon-week-${id}`);
         c.classList.toggle('hidden'); i.textContent = c.classList.contains('hidden') ? '►' : '▼';
     }
-    
-    // ФИКС: Вернули полноценное копирование недели
     function copyWeek(sourceWeekId) {
         const sourceWeekBlock = document.getElementById(`week-${sourceWeekId}`);
         const cycleId = sourceWeekBlock.closest('.cycle-block').id.split('-')[1];
@@ -729,7 +724,7 @@
     }
 
     // ==========================================
-    // ЛОГИКА ГРАФИКОВ (МУЛЬТИВЫБОР)
+    // ЛОГИКА ГРАФИКОВ 
     // ==========================================
     const verticalLinePlugin = {
         id: 'verticalLine',
@@ -739,10 +734,26 @@
                 const ctx = chart.ctx;
                 const xAxis = chart.scales.x;
                 const yAxis = chart.scales.y;
-                ctx.save(); ctx.strokeStyle = '#bdc3c7'; ctx.setLineDash([5, 5]); ctx.lineWidth = 1;
+                ctx.save(); 
+                ctx.strokeStyle = '#bdc3c7'; 
+                ctx.setLineDash([5, 5]); 
+                ctx.lineWidth = 1;
+                
                 lines.forEach(index => {
-                    const x = xAxis.getPixelForValue(index);
-                    ctx.beginPath(); ctx.moveTo(x, yAxis.top); ctx.lineTo(x, yAxis.bottom); ctx.stroke();
+                    let x;
+                    if (index === 0) {
+                        // Если в самом начале (для графиков недель/циклов), рисуем по левому краю
+                        x = xAxis.left; 
+                    } else {
+                        // Ищем ровно середину между предыдущим и текущим столбцом
+                        const prevX = xAxis.getPixelForValue(index - 1);
+                        const currX = xAxis.getPixelForValue(index);
+                        x = (prevX + currX) / 2;
+                    }
+                    ctx.beginPath(); 
+                    ctx.moveTo(x, yAxis.top); 
+                    ctx.lineTo(x, yAxis.bottom); 
+                    ctx.stroke();
                 });
                 ctx.restore();
             }
@@ -792,6 +803,7 @@
         const selectedEx = document.getElementById('ex-chart-select').value;
         const labelsWo = [], labelsWeek = [];
         const weekLinesIndices = [], cycleLinesIndices = [];
+        // Инициализируем структуру данных
         const data = { wo: { kpsh: [], oi: [], ot: [] }, week: { kpsh: [], oi: [], ot: [] }, ex: { kpsh: [], oi: [], ot: [] } };
 
         let globalWorkoutIndex = 0;
@@ -811,12 +823,19 @@
                         const kpsh = parseFloat(tr.querySelector('.calc-kpsh').textContent) || 0;
                         const ot = parseFloat(tr.querySelector('.calc-ot').textContent) || 0;
                         woKpsh += kpsh; woOt += ot;
+                        // Ищем выбранное упражнение
                         if (exName === selectedEx) { exKpsh += kpsh; exOt += ot; }
                     });
 
+                    // Для тренировок и недель нули - это нормально (отдых)
                     data.wo.kpsh.push(woKpsh); data.wo.ot.push(woOt); data.wo.oi.push(woKpsh > 0 ? parseFloat((woOt / woKpsh).toFixed(1)) : 0);
-                    data.ex.kpsh.push(exKpsh); data.ex.ot.push(exOt); data.ex.oi.push(exKpsh > 0 ? parseFloat((exOt / exKpsh).toFixed(1)) : 0);
                     weekKpsh += woKpsh; weekOt += woOt;
+
+                    // ДЛЯ УПРАЖНЕНИЯ: если упражнения не было (0), пишем null, чтобы график не падал в ноль, а пропускал эту точку
+                    data.ex.kpsh.push(exKpsh === 0 ? null : exKpsh); 
+                    data.ex.ot.push(exOt === 0 ? null : exOt); 
+                    data.ex.oi.push(exKpsh > 0 ? parseFloat((exOt / exKpsh).toFixed(1)) : null);
+                    
                     globalWorkoutIndex++;
                 });
                 data.week.kpsh.push(weekKpsh); data.week.ot.push(weekOt); data.week.oi.push(weekKpsh > 0 ? parseFloat((weekOt / weekKpsh).toFixed(1)) : 0);
@@ -827,7 +846,10 @@
 
     function getCommonOptions(lines = [], showLegend = true) {
         return {
-            responsive: true, maintainAspectRatio: false, spanGaps: true, interaction: { mode: 'index', intersect: false },
+            responsive: true, 
+            maintainAspectRatio: false, 
+            spanGaps: true, // ВАЖНО: Соединяет точки, даже если между ними null
+            interaction: { mode: 'index', intersect: false },
             plugins: { legend: { display: showLegend, position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }, verticalLine: { lines: lines } },
             scales: { x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 8, font: { size: 10 } } }, y: { beginAtZero: true, suggestedMax: 10, ticks: { font: { size: 10 } } } },
             elements: { line: { tension: 0.3, borderWidth: 2 }, point: { radius: 4, hoverRadius: 7 } }
@@ -838,15 +860,22 @@
         const { labelsWo, labelsWeek, data, weekLinesIndices, cycleLinesIndices } = getChartData();
         const colors = { kpsh: { border: '#3498db', bg: 'rgba(52, 152, 219, 0.1)', label: 'КПШ' }, oi: { border: '#e67e22', bg: 'rgba(230, 126, 34, 0.1)', label: 'ОИ' }, ot: { border: '#9b59b6', bg: 'rgba(155, 89, 182, 0.1)', label: 'ОТ' } };
 
-        // 1. Упражнение (БАР)
+        // 1. Упражнение (ЛАЙН с пропусками)
         const exMetrics = getActiveMetrics('ex-metric-toggles');
         const exLines = document.getElementById('ex-show-weeks').checked ? weekLinesIndices : [];
         const exDatasets = [];
         exMetrics.forEach(metric => {
-            exDatasets.push({ label: colors[metric].label, data: data.ex[metric], backgroundColor: colors[metric].border, borderColor: colors[metric].border, borderWidth: 1, borderRadius: 4 });
+            exDatasets.push({ 
+                label: colors[metric].label, 
+                data: data.ex[metric], 
+                borderColor: colors[metric].border, 
+                backgroundColor: colors[metric].bg, 
+                fill: false, // Отключаем заливку, чтобы не было странных фигур, когда график прыгает через null
+                spanGaps: true // Линия соединяет точки "через пустоту"
+            });
         });
         if (chartEx) chartEx.destroy();
-        chartEx = new Chart(document.getElementById('chart-exercise').getContext('2d'), { type: 'bar', data: { labels: labelsWo, datasets: exDatasets }, options: getCommonOptions(exLines) });
+        chartEx = new Chart(document.getElementById('chart-exercise').getContext('2d'), { type: 'line', data: { labels: labelsWo, datasets: exDatasets }, options: getCommonOptions(exLines) });
 
         // 2. Тренировка (ЛАЙН)
         const woMetrics = getActiveMetrics('wo-metric-toggles');

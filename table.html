@@ -36,32 +36,15 @@
         select.input-ex { width: 130px; padding: 2px; text-align: left; }
         
         /* Название программы в шапке */
-        .program-title-input {
-            font-size: 16px; font-weight: bold; color: #2c3e50; border: 1px solid transparent; background: transparent; padding: 5px 10px; border-radius: 4px; text-align: center; width: 300px; font-family: inherit; outline: none;
-        }
+        .program-title-input { font-size: 16px; font-weight: bold; color: #2c3e50; border: 1px solid transparent; background: transparent; padding: 5px 10px; border-radius: 4px; text-align: center; width: 300px; font-family: inherit; outline: none; }
         .program-title-input:hover { border-color: #ccc; background: white; }
         .program-title-input:focus { border-color: #3498db; background: white; }
 
         .save-status { font-size: 12px; color: #27ae60; margin-right: 15px; display: none;}
 
-        /* ====== СТИЛИ ДЛЯ ГРАФИКОВ (ИСПРАВЛЕНЫ) ====== */
-        .right-panel { 
-            flex: 1; 
-            display: flex; 
-            justify-content: center; 
-            align-items: flex-start;
-            padding: 0 10px;
-            border: none; 
-            background: transparent; 
-        }
-        
-        .charts-container { 
-            width: 100%; 
-            max-width: 500px; /* Ограничиваем ширину, чтобы графики не растягивались */
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-        }
+        /* ====== СТИЛИ ДЛЯ ГРАФИКОВ ====== */
+        .right-panel { flex: 1; display: flex; justify-content: center; align-items: flex-start; padding: 0 10px; border: none; background: transparent; }
+        .charts-container { width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 15px; }
         
         .chart-block { background: white; border-radius: 6px; border: 1px solid #e1e4e6; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.02);}
         .chart-header { background: #f8f9fa; padding: 10px 15px; font-weight: bold; color: #2c3e50; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; font-size: 13px;}
@@ -71,7 +54,7 @@
         
         .chart-controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: center; justify-content: space-between;}
         .metric-toggles { display: flex; gap: 3px; background: #ecf0f1; padding: 3px; border-radius: 4px;}
-        .metric-btn { border: none; background: transparent; padding: 3px 10px; border-radius: 3px; cursor: pointer; font-size: 11px; font-weight: bold; color: #7f8c8d; transition: 0.2s;}
+        .metric-btn { border: none; background: transparent; padding: 3px 10px; border-radius: 3px; cursor: pointer; font-size: 11px; font-weight: bold; color: #7f8c8d; transition: 0.2s; user-select: none;}
         .metric-btn.active { background: white; color: #2c3e50; box-shadow: 0 1px 3px rgba(0,0,0,0.1);}
         
         .dashed-toggle { display: flex; align-items: center; gap: 5px; font-size: 11px; cursor: pointer; color: #7f8c8d;}
@@ -79,8 +62,7 @@
         
         .chart-select { padding: 4px; border-radius: 4px; border: 1px solid #ccc; font-family: inherit; font-size: 12px; width: 100%; margin-bottom: 10px;}
         
-        /* Высота графика фиксируется, чтобы он не скакал */
-        .canvas-wrapper { position: relative; height: 200px; width: 100%; }
+        .canvas-wrapper { position: relative; height: 220px; width: 100%; }
     </style>
 </head>
 <body>
@@ -95,40 +77,28 @@
 
 <div class="layout">
     <div class="left-panel">
-        <!-- Секция ПМ -->
         <div class="pm-section">
             <div>
                 <div style="font-weight:bold; margin-bottom:4px; font-size:11px;">ПМ (кг)</div>
                 <table class="pm-table" id="pmTable">
-                    <thead>
-                        <tr><th>УПР</th><th>ПМ</th><th></th></tr>
-                    </thead>
+                    <thead><tr><th>УПР</th><th>ПМ</th><th></th></tr></thead>
                     <tbody id="pmTbody"></tbody>
                 </table>
                 <button class="btn-add" style="margin-top: 4px;" onclick="addPmRow()">+ Добавить ПМ</button>
             </div>
         </div>
 
-        <!-- ТАЙМЛАЙН ПЕРИОДОВ -->
         <div class="timeline-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <div style="font-weight:bold; font-size:11px;">Структура макроцикла (Периоды)</div>
                 <button class="btn-add" style="padding: 2px 8px; font-size: 11px;" onclick="addPeriodColumn()">+ Добавить период</button>
             </div>
-            
             <table class="timeline-table" id="timelineTable">
-                <tbody>
-                    <tr id="timelineNamesRow"></tr>
-                    <tr id="timelineSubRow"></tr>
-                    <tr id="timelineDescRow"></tr>
-                </tbody>
+                <tbody><tr id="timelineNamesRow"></tr><tr id="timelineSubRow"></tr><tr id="timelineDescRow"></tr></tbody>
             </table>
         </div>
 
-        <!-- Контейнер для циклов -->
         <div id="cyclesContainer"></div>
-
-        <!-- Кнопка создания цикла -->
         <button class="btn-cycle" onclick="addNewCycle()">+ Создать новый цикл (макро/мезо)</button>
     </div>
 
@@ -136,7 +106,7 @@
     <div class="right-panel">
         <div class="charts-container">
             
-            <!-- Блок 1: График упражнения -->
+            <!-- Блок 1: График упражнения (СТОЛБИКИ) -->
             <div class="chart-block">
                 <div class="chart-header" onclick="toggleChart('chart-ex-body', this)">
                     <span>🏋️‍♂️ Динамика упражнения</span>
@@ -149,8 +119,8 @@
                     <div class="chart-controls">
                         <div class="metric-toggles" id="ex-metric-toggles">
                             <button class="metric-btn active" data-metric="kpsh">КПШ</button>
-                            <button class="metric-btn" data-metric="oi">ОИ</button>
-                            <button class="metric-btn" data-metric="ot">ОТ</button>
+                            <button class="metric-btn active" data-metric="oi">ОИ</button>
+                            <button class="metric-btn active" data-metric="ot">ОТ</button>
                         </div>
                         <label class="dashed-toggle">
                             <input type="checkbox" id="ex-show-weeks" onchange="renderCharts()"> Пунктир (недели)
@@ -162,7 +132,7 @@
                 </div>
             </div>
 
-            <!-- Блок 2: График тренировок -->
+            <!-- Блок 2: График тренировок (ЛИНИИ) -->
             <div class="chart-block">
                 <div class="chart-header" onclick="toggleChart('chart-workout-body', this)">
                     <span>📊 Сумма за тренировку</span>
@@ -172,8 +142,8 @@
                     <div class="chart-controls">
                         <div class="metric-toggles" id="wo-metric-toggles">
                             <button class="metric-btn active" data-metric="kpsh">КПШ</button>
-                            <button class="metric-btn" data-metric="oi">ОИ</button>
-                            <button class="metric-btn" data-metric="ot">ОТ</button>
+                            <button class="metric-btn active" data-metric="oi">ОИ</button>
+                            <button class="metric-btn active" data-metric="ot">ОТ</button>
                         </div>
                         <label class="dashed-toggle">
                             <input type="checkbox" id="wo-show-weeks" onchange="renderCharts()"> Пунктир (недели)
@@ -185,7 +155,7 @@
                 </div>
             </div>
 
-            <!-- Блок 3: График недель -->
+            <!-- Блок 3: График недель (ЛИНИИ) -->
             <div class="chart-block">
                 <div class="chart-header" onclick="toggleChart('chart-week-body', this)">
                     <span>📅 Сумма за неделю</span>
@@ -195,8 +165,8 @@
                     <div class="chart-controls">
                         <div class="metric-toggles" id="week-metric-toggles">
                             <button class="metric-btn active" data-metric="kpsh">КПШ</button>
-                            <button class="metric-btn" data-metric="oi">ОИ</button>
-                            <button class="metric-btn" data-metric="ot">ОТ</button>
+                            <button class="metric-btn active" data-metric="oi">ОИ</button>
+                            <button class="metric-btn active" data-metric="ot">ОТ</button>
                         </div>
                         <label class="dashed-toggle">
                             <input type="checkbox" id="week-show-cycles" onchange="renderCharts()"> Пунктир (циклы)
@@ -251,7 +221,7 @@
     if (user && clientId && programId) {
         await loadProgramFromCloud();
     } else if (!clientId) {
-        programTitleInput.value = "Черновик (не сохраняется в облако)";
+        programTitleInput.value = "Черновик";
         programTitleInput.disabled = true;
         loadFromLocalStorage();
         isDataLoaded = true;
@@ -482,7 +452,7 @@
         const c = document.getElementById(`cycle-content-${id}`), i = document.getElementById(`icon-cycle-${id}`);
         c.classList.toggle('hidden'); i.textContent = c.classList.contains('hidden') ? '►' : '▼';
     }
-    function copyCycle(sourceId) { /* Заглушка для копирования */ }
+    function copyCycle(sourceId) { /* Заглушка */ }
 
     function addNewWeek(cycleId, sourceWeekId = null) {
         const weekId = globalWeekCounter++;
@@ -513,7 +483,7 @@
         const c = document.getElementById(`week-content-${id}`), i = document.getElementById(`icon-week-${id}`);
         c.classList.toggle('hidden'); i.textContent = c.classList.contains('hidden') ? '►' : '▼';
     }
-    function copyWeek(sourceId) { /* Заглушка для копирования */ }
+    function copyWeek(sourceId) { /* Заглушка */ }
 
     function addWorkoutToWeek(weekId) {
         const workoutId = globalWorkoutCounter++;
@@ -616,7 +586,7 @@
     }
 
     // ==========================================
-    // ГРАФИКИ (ОБНОВЛЕННАЯ ЛОГИКА)
+    // ЛОГИКА ГРАФИКОВ (МУЛЬТИВЫБОР)
     // ==========================================
     const verticalLinePlugin = {
         id: 'verticalLine',
@@ -660,15 +630,26 @@
         select.innerHTML = options;
     }
 
+    // Обработчик мультивыбора кнопок
     document.querySelectorAll('.metric-toggles').forEach(toggle => {
         toggle.addEventListener('click', (e) => {
             if (e.target.classList.contains('metric-btn')) {
-                toggle.querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
+                // Просто переключаем класс active у нажатой кнопки
+                e.target.classList.toggle('active');
                 renderCharts();
             }
         });
     });
+
+    // Функция для сбора активных метрик
+    function getActiveMetrics(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return [];
+        const activeBtns = container.querySelectorAll('.metric-btn.active');
+        const metrics = [];
+        activeBtns.forEach(btn => metrics.push(btn.dataset.metric));
+        return metrics;
+    }
 
     function getChartData() {
         const selectedEx = document.getElementById('ex-chart-select').value;
@@ -707,70 +688,96 @@
         return { labelsWo, labelsWeek, data, weekLinesIndices, cycleLinesIndices };
     }
 
-    // Базовые настройки для всех графиков (чтобы они выглядели аккуратно)
-    function getCommonOptions(lines = []) {
+    function getCommonOptions(lines = [], showLegend = true) {
         return {
             responsive: true,
             maintainAspectRatio: false,
-            spanGaps: true, // Соединять точки, даже если есть пустые значения
+            spanGaps: true,
             interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: { display: false },
+                legend: { display: showLegend, position: 'top', labels: { boxWidth: 12, font: { size: 10 } } },
                 verticalLine: { lines: lines }
             },
             scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { autoSkip: true, maxTicksLimit: 8, font: { size: 10 } } // Ограничиваем кол-во подписей
-                },
-                y: {
-                    beginAtZero: true,
-                    suggestedMax: 10, // Если все значения маленькие, график не будет плоским
-                    ticks: { font: { size: 10 } }
-                }
+                x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 8, font: { size: 10 } } },
+                y: { beginAtZero: true, suggestedMax: 10, ticks: { font: { size: 10 } } }
             },
-            elements: {
-                line: { tension: 0.3, borderWidth: 2 }, // Плавные линии
-                point: { radius: 4, hoverRadius: 7 }    // Хорошо заметные точки
-            }
+            elements: { line: { tension: 0.3, borderWidth: 2 }, point: { radius: 4, hoverRadius: 7 } }
         };
     }
 
     function renderCharts() {
         const { labelsWo, labelsWeek, data, weekLinesIndices, cycleLinesIndices } = getChartData();
-        const colors = { kpsh: { border: '#3498db', bg: 'rgba(52, 152, 219, 0.1)', label: 'КПШ' }, oi: { border: '#e67e22', bg: 'rgba(230, 126, 34, 0.1)', label: 'ОИ' }, ot: { border: '#9b59b6', bg: 'rgba(155, 89, 182, 0.1)', label: 'ОТ' } };
+        const colors = { 
+            kpsh: { border: '#3498db', bg: 'rgba(52, 152, 219, 0.1)', label: 'КПШ' }, 
+            oi: { border: '#e67e22', bg: 'rgba(230, 126, 34, 0.1)', label: 'ОИ' }, 
+            ot: { border: '#9b59b6', bg: 'rgba(155, 89, 182, 0.1)', label: 'ОТ' } 
+        };
 
-        // 1. Упражнение
-        const exMetric = document.querySelector('#ex-metric-toggles .active').dataset.metric;
+        // ============ 1. ГРАФИК УПРАЖНЕНИЯ (СТОЛБИКИ) ============
+        const exMetrics = getActiveMetrics('ex-metric-toggles');
         const exLines = document.getElementById('ex-show-weeks').checked ? weekLinesIndices : [];
-        const selectedEx = document.getElementById('ex-chart-select').value;
-        
+        const exDatasets = [];
+
+        exMetrics.forEach(metric => {
+            exDatasets.push({
+                label: colors[metric].label,
+                data: data.ex[metric],
+                backgroundColor: colors[metric].border, // Сплошной цвет для столбиков
+                borderColor: colors[metric].border,
+                borderWidth: 1,
+                borderRadius: 4 // Закругленные верхушки столбиков
+            });
+        });
+
         if (chartEx) chartEx.destroy();
         chartEx = new Chart(document.getElementById('chart-exercise').getContext('2d'), {
-            type: 'line',
-            data: { labels: labelsWo, datasets: [{ label: selectedEx || 'Упражнение', data: data.ex[exMetric], borderColor: colors[exMetric].border, backgroundColor: colors[exMetric].bg, fill: true }] },
+            type: 'bar', // <--- СТОЛБИКИ
+            data: { labels: labelsWo, datasets: exDatasets },
             options: getCommonOptions(exLines)
         });
 
-        // 2. Тренировка
-        const woMetric = document.querySelector('#wo-metric-toggles .active').dataset.metric;
+        // ============ 2. ГРАФИК ТРЕНИРОВОК (ЛИНИИ) ============
+        const woMetrics = getActiveMetrics('wo-metric-toggles');
         const woLines = document.getElementById('wo-show-weeks').checked ? weekLinesIndices : [];
-        
+        const woDatasets = [];
+
+        woMetrics.forEach(metric => {
+            woDatasets.push({
+                label: colors[metric].label,
+                data: data.wo[metric],
+                borderColor: colors[metric].border,
+                backgroundColor: colors[metric].bg,
+                fill: false // Выключаем заливку, чтобы линии не перекрывали друг друга
+            });
+        });
+
         if (chartWo) chartWo.destroy();
         chartWo = new Chart(document.getElementById('chart-workout').getContext('2d'), {
             type: 'line',
-            data: { labels: labelsWo, datasets: [{ label: 'Тренировка', data: data.wo[woMetric], borderColor: colors[woMetric].border, backgroundColor: colors[woMetric].bg, fill: true }] },
+            data: { labels: labelsWo, datasets: woDatasets },
             options: getCommonOptions(woLines)
         });
 
-        // 3. Неделя
-        const weekMetric = document.querySelector('#week-metric-toggles .active').dataset.metric;
+        // ============ 3. ГРАФИК НЕДЕЛЬ (ЛИНИИ) ============
+        const weekMetrics = getActiveMetrics('week-metric-toggles');
         const cycleLines = document.getElementById('week-show-cycles').checked ? cycleLinesIndices : [];
-        
+        const weekDatasets = [];
+
+        weekMetrics.forEach(metric => {
+            weekDatasets.push({
+                label: colors[metric].label,
+                data: data.week[metric],
+                borderColor: colors[metric].border,
+                backgroundColor: colors[metric].bg,
+                fill: false
+            });
+        });
+
         if (chartWeek) chartWeek.destroy();
         chartWeek = new Chart(document.getElementById('chart-week').getContext('2d'), {
             type: 'line',
-            data: { labels: labelsWeek, datasets: [{ label: 'Неделя', data: data.week[weekMetric], borderColor: colors[weekMetric].border, backgroundColor: colors[weekMetric].bg, fill: true }] },
+            data: { labels: labelsWeek, datasets: weekDatasets },
             options: getCommonOptions(cycleLines)
         });
     }

@@ -33,20 +33,34 @@
         /* Стили для select */
         select.input-ex { width: 130px; padding: 2px; text-align: left; }
         
-        /* Кнопки облака */
-        .btn-cloud { background-color: #9b59b6; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; margin-left: 10px;}
-        .btn-cloud:hover { background-color: #8e44ad; }
+        /* Название программы в шапке */
+        .program-title-input {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+            border: 1px solid transparent;
+            background: transparent;
+            padding: 5px 10px;
+            border-radius: 4px;
+            text-align: center;
+            width: 300px;
+            font-family: inherit;
+            outline: none;
+        }
+        .program-title-input:hover { border-color: #ccc; background: white; }
+        .program-title-input:focus { border-color: #3498db; background: white; }
+
+        .save-status { font-size: 12px; color: #27ae60; margin-right: 15px; display: none;}
     </style>
 </head>
 <body>
 
 <div class="top-nav">
-    <a href="index.html" class="btn-link" style="padding: 5px 10px; border-radius: 4px;">← На главную</a>
-    <span style="font-weight: bold; color: #2c3e50;">Конструктор программы</span>
+    <a href="#" id="back-btn" class="btn-link" style="padding: 5px 10px; border-radius: 4px;">← Назад</a>
+    <input type="text" id="program-title" class="program-title-input" placeholder="Название программы..." value="Загрузка...">
     
-    <div style="display: flex; gap: 10px;">
-        <button class="btn-cloud" id="btn-save-cloud">☁️ Сохранить в облако</button>
-        <button class="btn-cloud" id="btn-load-cloud" style="background-color: #3498db;">☁️ Загрузить из облака</button>
+    <div style="display: flex; align-items: center;">
+        <span id="save-indicator" class="save-status">Сохранено ☁️</span>
     </div>
 </div>
 
@@ -100,9 +114,8 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js";
 
-  // Твой конфиг
   const firebaseConfig = {
     apiKey: "AIzaSyCU418F9p5qxpEFIeHGNSQD17z155Tqtf8",
     authDomain: "jobs-38388.firebaseapp.com",
@@ -117,56 +130,106 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const clientId = urlParams.get('clientId');
+  const programId = urlParams.get('programId');
+  
   let currentUser = null;
+  let isDataLoaded = false; // Защита, чтобы автосохранение не сработало до загрузки
+
+  const backBtn = document.getElementById('back-btn');
+  const programTitleInput = document.getElementById('program-title');
+  const saveIndicator = document.getElementById('save-indicator');
+
+  // Настраиваем кнопку "Назад"
+  if (clientId) {
+      backBtn.href = `client.html?id=${clientId}`;
+  } else {
+      backBtn.href = `index.html`;
+  }
 
   // Следим за авторизацией
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     currentUser = user;
+    if (user && clientId && programId) {
+        // Загружаем конкретную программу
+        await loadProgramFromCloud();
+    } else if (!clientId) {
+        // Это черновик (без привязки к клиенту)
+        programTitleInput.value = "Черновик (не сохраняется в облако)";
+        programTitleInput.disabled = true;
+        loadFromLocalStorage();
+        isDataLoaded = true;
+    }
   });
 
-  // ==========================================
-  // ЛОГИКА ОБЛАКА
-  // ==========================================
-  document.getElementById('btn-save-cloud').addEventListener('click', async () => {
-      if (!currentUser) {
-          alert('Вы не авторизованы! Вернитесь на главную и войдите.');
-          return;
-      }
-      
-      try {
-          const state = getCurrentState(); // Собираем данные
-          
-          // Сохраняем в Firestore по пути: users/ТВОЙ_UID/programs/current
-          await setDoc(doc(db, "users", currentUser.uid, "programs", "current"), state);
-          alert('✅ Программа успешно сохранена в облако! Теперь её видно с любого устройства.');
-      } catch (e) {
-          console.error("Ошибка сохранения:", e);
-          alert('Ошибка при сохранении. Проверь консоль.');
-      }
-  });
+  // Загрузка программы из Firestore
+  async function loadProgramFromCloud() {
+    try {
+        const docRef = doc(db, "users", currentUser.uid, "clients", clientId, "programs", programId);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            programTitleInput.value = data.title || "Без названия";
+            
+            if (data.data) {
+                renderState(data.data);
+            } else {
+                // Если данных нет, создаем пустой шаблон
+                createEmptyTemplate();
+            }
+        } else {
+            alert("Программа не найдена в базе.");
+            programTitleInput.value = "Ошибка";
+        }
+    } catch (e) {
+        console.error("Ошибка загрузки: ", e);
+        alert("Не удалось загрузить программу.");
+    } finally {
+        isDataLoaded = true;
+    }
+  }
 
-  document.getElementById('btn-load-cloud').addEventListener('click', async () => {
-      if (!currentUser) {
-          alert('Вы не авторизованы! Вернитесь на главную и войдите.');
-          return;
-      }
+  // Сохранение в Firestore
+  let saveTimeout;
+  window.triggerCloudSave = () => {
+      if (!isDataLoaded || !currentUser || !clientId || !programId) return;
 
-      try {
-          const docRef = doc(db, "users", currentUser.uid, "programs", "current");
-          const docSnap = await getDoc(docRef);
+      // Показываем индикатор "Сохранение..."
+      saveIndicator.textContent = "Сохранение... ⏳";
+      saveIndicator.style.display = "inline";
+      saveIndicator.style.color = "#e67e22";
 
-          if (docSnap.exists()) {
-              const state = docSnap.data();
-              renderState(state); // Отрисовываем данные на экране
-              alert('✅ Программа загружена из облака!');
-          } else {
-              alert('В облаке пока нет сохраненных программ.');
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(async () => {
+          try {
+              const state = getCurrentState();
+              const title = programTitleInput.value;
+              
+              const docRef = doc(db, "users", currentUser.uid, "clients", clientId, "programs", programId);
+              await setDoc(docRef, {
+                  title: title,
+                  data: state,
+                  updatedAt: new Date()
+              }, { merge: true });
+
+              saveIndicator.textContent = "Сохранено ☁️";
+              saveIndicator.style.color = "#27ae60";
+              
+              setTimeout(() => { saveIndicator.style.display = "none"; }, 2000);
+          } catch (e) {
+              console.error("Ошибка сохранения: ", e);
+              saveIndicator.textContent = "Ошибка сохранения ❌";
+              saveIndicator.style.color = "#e74c3c";
           }
-      } catch (e) {
-          console.error("Ошибка загрузки:", e);
-          alert('Ошибка при загрузке. Проверь консоль.');
-      }
-  });
+      }, 1500); // Ждем 1.5 секунды после последнего изменения
+  };
+
+  // Слушатели для автосохранения в облако
+  document.addEventListener('input', () => { if(isDataLoaded) triggerCloudSave(); });
+  document.addEventListener('change', () => { if(isDataLoaded) triggerCloudSave(); });
+  document.addEventListener('click', () => { if(isDataLoaded) setTimeout(triggerCloudSave, 50); });
 
 </script>
 
@@ -215,14 +278,8 @@
         return options;
     }
 
-    // ==========================================
-    // СБОР И ОТРИСОВКА ДАННЫХ (Универсальные функции)
-    // ==========================================
-    
-    // Собирает все данные из DOM в объект
     function getCurrentState() {
         const state = { cycles: [], periods: [] };
-
         const pmData = [];
         document.querySelectorAll('#pmTbody tr').forEach(tr => {
             pmData.push({ name: tr.querySelector('.pm-name').value, val: tr.querySelector('.pm-val').value });
@@ -270,7 +327,6 @@
         return state;
     }
 
-    // Отрисовывает интерфейс по объекту данных
     function renderState(state) {
         // Очищаем всё
         document.getElementById('pmTbody').innerHTML = '';
@@ -326,30 +382,35 @@
         updateAllCalculations();
     }
 
-    // ==========================================
-    // АВТОСОХРАНЕНИЕ В БРАУЗЕР (LocalStorage)
-    // ==========================================
+    function createEmptyTemplate() {
+        addPmRow(); addPmRow(); addPmRow();
+        showTimelinePlaceholder();
+        addNewCycle();
+    }
+
+    // === ЛОКАЛЬНОЕ СОХРАНЕНИЕ (Для черновика) ===
     function saveLocalState() {
-        const state = getCurrentState();
-        localStorage.setItem('trainerAppState', JSON.stringify(state));
+        if (!clientId) { // Сохраняем локально только если это черновик
+            const state = getCurrentState();
+            localStorage.setItem('trainerDraftState', JSON.stringify(state));
+        }
     }
-
-    function loadLocalState() {
-        const saved = localStorage.getItem('trainerAppState');
-        if (!saved) return false;
-        const state = JSON.parse(saved);
-        renderState(state);
-        return true;
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem('trainerDraftState');
+        if (saved) {
+            const state = JSON.parse(saved);
+            renderState(state);
+        } else {
+            createEmptyTemplate();
+        }
     }
-
     document.addEventListener('input', saveLocalState);
     document.addEventListener('change', saveLocalState); 
     document.addEventListener('click', () => setTimeout(saveLocalState, 50)); 
 
     // ==========================================
-    // БАЗОВЫЕ ФУНКЦИИ ИНТЕРФЕЙСА
+    // БАЗОВЫЕ ФУНКЦИИ ИНТЕРФЕЙСА (Без изменений)
     // ==========================================
-
     function addPmRow(name = '', val = '') {
         const tbody = document.querySelector('#pmTbody');
         const tr = document.createElement('tr');
@@ -362,10 +423,7 @@
         updateAllCalculations(); 
     }
 
-    function delPmRow(btn) {
-        btn.closest('tr').remove();
-        updateAllCalculations();
-    }
+    function delPmRow(btn) { btn.closest('tr').remove(); updateAllCalculations(); }
 
     function getPmData() {
         const pmData = {};
@@ -380,16 +438,13 @@
     function addPeriodColumn(name = 'Период', sub = '', desc = '') {
         const id = globalPeriodCounter++;
         const bgClass = `bg-color-${id % 5}`;
-
         removeTimelinePlaceholder();
 
         const nameTd = document.createElement('td');
         nameTd.className = bgClass;
         nameTd.style.position = 'relative';
-        nameTd.innerHTML = `
-            <button class="timeline-del-btn" onclick="deletePeriod(this)" title="Удалить период">×</button>
-            <input type="text" class="timeline-name-input" value="${name}" placeholder="Название">
-        `;
+        nameTd.innerHTML = `<button class="timeline-del-btn" onclick="deletePeriod(this)" title="Удалить период">×</button>
+            <input type="text" class="timeline-name-input" value="${name}" placeholder="Название">`;
         document.getElementById('timelineNamesRow').appendChild(nameTd);
 
         const subTd = document.createElement('td');
@@ -406,22 +461,16 @@
     function deletePeriod(btn) {
         const td = btn.closest('td');
         const index = Array.from(td.parentNode.children).indexOf(td);
-        
         document.getElementById('timelineNamesRow').children[index].remove();
         document.getElementById('timelineSubRow').children[index].remove();
         document.getElementById('timelineDescRow').children[index].remove();
-
-        if (document.getElementById('timelineNamesRow').children.length === 0) {
-            showTimelinePlaceholder();
-        }
+        if (document.getElementById('timelineNamesRow').children.length === 0) showTimelinePlaceholder();
     }
 
     function removeTimelinePlaceholder() {
         const namesRow = document.getElementById('timelineNamesRow');
         if (namesRow.children.length === 1 && namesRow.children[0].classList.contains('empty-placeholder')) {
-            namesRow.innerHTML = '';
-            document.getElementById('timelineSubRow').innerHTML = '';
-            document.getElementById('timelineDescRow').innerHTML = '';
+            namesRow.innerHTML = ''; document.getElementById('timelineSubRow').innerHTML = ''; document.getElementById('timelineDescRow').innerHTML = '';
         }
     }
 
@@ -431,7 +480,6 @@
         document.getElementById('timelineDescRow').innerHTML = '<td style="border:none;"></td>';
     }
 
-    // --- УПРАВЛЕНИЕ ЦИКЛАМИ ---
     function addNewCycle(isCopy = false) {
         const cycleId = globalCycleCounter++;
         const container = document.getElementById('cyclesContainer');
@@ -464,29 +512,20 @@
     function toggleCycle(cycleId) {
         const content = document.getElementById(`cycle-content-${cycleId}`);
         const icon = document.getElementById(`icon-cycle-${cycleId}`);
-        if (content.classList.contains('hidden')) {
-            content.classList.remove('hidden');
-            icon.textContent = '▼';
-        } else {
-            content.classList.add('hidden');
-            icon.textContent = '►';
-        }
+        if (content.classList.contains('hidden')) { content.classList.remove('hidden'); icon.textContent = '▼'; } 
+        else { content.classList.add('hidden'); icon.textContent = '►'; }
     }
 
     function deleteCycle(cycleId) {
         if(confirm('Удалить цикл?')) {
             const cycleBlock = document.getElementById(`cycle-${cycleId}`);
-            if (cycleBlock) {
-                cycleBlock.remove();
-                updateAllCalculations();
-            }
+            if (cycleBlock) { cycleBlock.remove(); updateAllCalculations(); }
         }
     }
 
     function copyCycle(sourceCycleId) {
         const newCycleId = globalCycleCounter;
         addNewCycle(true);
-        
         const sourceCycleBlock = document.getElementById(`cycle-${sourceCycleId}`);
         const newCycleBlock = document.getElementById(`cycle-${newCycleId}`);
         const newWeeksContainer = document.getElementById(`weeks-container-${newCycleId}`);
@@ -521,7 +560,6 @@
                 </div>
             `;
             newWeeksContainer.appendChild(newWeekBlock);
-            
             const newWeeksContent = newWeekBlock.querySelector(`#workouts-container-${weekId}`);
             
             sourceWeek.querySelectorAll('.workout-block').forEach((sourceWorkout) => {
@@ -563,7 +601,6 @@
                         <button class="btn-add-set" onclick="addExerciseRow(${workoutId})">+ Упражнение</button>
                     </div>
                 `;
-                
                 newWeeksContent.appendChild(newWorkoutDiv);
                 const newTbody = newWorkoutDiv.querySelector('.workout-tbody');
                 
@@ -589,13 +626,9 @@
                         <td><button class="btn-del" onclick="this.closest('tr').remove(); updateAllCalculations();">x</button></td>
                     `;
                     newTbody.appendChild(newTr);
-                    
                     const newSetsContainer = newTr.querySelector('.scroll-sets');
                     sourceTr.querySelectorAll('.set-block').forEach(sourceSet => {
-                        const weight = sourceSet.querySelector('.set-weight').value;
-                        const sets = sourceSet.querySelector('.set-sets').value;
-                        const reps = sourceSet.querySelector('.set-reps').value;
-                        addSet(workoutId, exId, weight, sets, reps);
+                        addSet(workoutId, exId, sourceSet.querySelector('.set-weight').value, sourceSet.querySelector('.set-sets').value, sourceSet.querySelector('.set-reps').value);
                     });
                 });
             });
@@ -606,12 +639,10 @@
     function addNewWeek(cycleId, sourceWeekId = null) {
         const weekId = globalWeekCounter++;
         const container = document.getElementById(`weeks-container-${cycleId}`);
-        
         const weekBlock = document.createElement('div');
         weekBlock.className = 'week-block';
         weekBlock.id = `week-${weekId}`;
         weekBlock.dataset.parentId = sourceWeekId !== null ? sourceWeekId : '';
-        
         let defaultName = `Неделя ${container.children.length + 1}`;
         
         weekBlock.innerHTML = `
@@ -633,12 +664,9 @@
                 <button class="btn-add" onclick="addWorkoutToWeek(${weekId})">+ Добавить тренировку</button>
             </div>
         `;
-        
         container.appendChild(weekBlock);
-        
-        if (sourceWeekId === null) {
-            addWorkoutToWeek(weekId);
-        } else {
+        if (sourceWeekId === null) { addWorkoutToWeek(weekId); } 
+        else {
             const originalName = document.getElementById(`name-week-${sourceWeekId}`).value;
             document.getElementById(`name-week-${weekId}`).value = originalName + ' (копия)';
         }
@@ -650,32 +678,22 @@
     function deleteWeek(weekId) {
         if(confirm('Удалить неделю?')) {
             const weekBlock = document.getElementById(`week-${weekId}`);
-            if (weekBlock) {
-                weekBlock.remove();
-                updateAllCalculations();
-            }
+            if (weekBlock) { weekBlock.remove(); updateAllCalculations(); }
         }
     }
 
     function toggleWeek(weekId) {
         const content = document.getElementById(`week-content-${weekId}`);
         const icon = document.getElementById(`icon-week-${weekId}`);
-        if (content.classList.contains('hidden')) {
-            content.classList.remove('hidden');
-            icon.textContent = '▼';
-        } else {
-            content.classList.add('hidden');
-            icon.textContent = '►';
-        }
+        if (content.classList.contains('hidden')) { content.classList.remove('hidden'); icon.textContent = '▼'; } 
+        else { content.classList.add('hidden'); icon.textContent = '►'; }
     }
 
     function copyWeek(sourceWeekId) {
         const sourceWeekBlock = document.getElementById(`week-${sourceWeekId}`);
         const cycleId = sourceWeekBlock.closest('.cycle-block').id.split('-')[1];
-        
         const newWeekId = globalWeekCounter;
         addNewWeek(cycleId, sourceWeekId);
-        
         const newWeekContent = document.getElementById(`week-content-${newWeekId}`);
         newWeekContent.querySelector('#workouts-container-' + newWeekId).innerHTML = '';
         
@@ -744,13 +762,9 @@
                     <td><button class="btn-del" onclick="this.closest('tr').remove(); updateAllCalculations();">x</button></td>
                 `;
                 newTbody.appendChild(newTr);
-                
                 const newSetsContainer = newTr.querySelector('.scroll-sets');
                 sourceTr.querySelectorAll('.set-block').forEach(sourceSet => {
-                    const weight = sourceSet.querySelector('.set-weight').value;
-                    const sets = sourceSet.querySelector('.set-sets').value;
-                    const reps = sourceSet.querySelector('.set-reps').value;
-                    addSet(workoutId, exId, weight, sets, reps);
+                    addSet(workoutId, exId, sourceSet.querySelector('.set-weight').value, sourceSet.querySelector('.set-sets').value, sourceSet.querySelector('.set-reps').value);
                 });
             });
         });
@@ -760,7 +774,6 @@
     function addWorkoutToWeek(weekId) {
         const workoutId = globalWorkoutCounter++;
         const container = document.getElementById(`workouts-container-${weekId}`);
-        
         const workoutDiv = document.createElement('div');
         workoutDiv.className = 'workout-block';
         workoutDiv.id = `workout-${workoutId}`;
@@ -797,7 +810,6 @@
                 <button class="btn-add-set" onclick="addExerciseRow(${workoutId})">+ Упражнение</button>
             </div>
         `;
-        
         container.appendChild(workoutDiv);
         addExerciseRow(workoutId);
         return workoutId;
@@ -825,9 +837,7 @@
         return id;
     }
 
-    function onExNameChange(workoutId, id) {
-        updateAllCalculations();
-    }
+    function onExNameChange(workoutId, id) { updateAllCalculations(); }
 
     function addSet(workoutId, exId, weightVal = '', setsVal = '', repsVal = '') {
         const container = document.getElementById(`sets-container-${workoutId}-${exId}`);
@@ -871,7 +881,6 @@
                 workoutBlock.querySelectorAll('tbody tr').forEach(tr => {
                     const exName = tr.querySelector('.ex-name').value;
                     const pm = pmData[exName] || 0;
-                    
                     let exKpsh = 0;
                     let exOt = 0;
 
@@ -920,15 +929,12 @@
                             const pKpsh = parseFloat(parentTr.querySelector('.calc-kpsh').textContent) || 0;
                             const pOt = parseFloat(parentTr.querySelector('.calc-ot').textContent) || 0;
                             const pOi = parseFloat(parentTr.querySelector('.calc-oi').textContent) || 0;
-                            
                             setTrend(`trend-ex-kpsh-${workoutId}-${tr.id.split('-')[2]}`, dispExKpsh, pKpsh);
                             setTrend(`trend-ex-ot-${workoutId}-${tr.id.split('-')[2]}`, dispExOt, pOt);
                             setTrend(`trend-ex-oi-${workoutId}-${tr.id.split('-')[2]}`, dispExOi, pOi, true);
                         }
                     }
-
-                    workoutKpsh += exKpsh;
-                    workoutOt += exOt;
+                    workoutKpsh += exKpsh; workoutOt += exOt;
                 });
 
                 const dispWKpsh = Math.round(workoutKpsh);
@@ -947,15 +953,12 @@
                         const pWKpsh = parseFloat(parentWorkout.querySelector('.w-t-kpsh').textContent) || 0;
                         const pWOt = parseFloat(parentWorkout.querySelector('.w-t-ot').textContent) || 0;
                         const pWOi = parseFloat(parentWorkout.querySelector('.w-t-oi').textContent) || 0;
-                        
                         setTrend(`trend-w-kpsh-${workoutId}`, dispWKpsh, pWKpsh);
                         setTrend(`trend-w-ot-${workoutId}`, dispWOt, pWOt);
                         setTrend(`trend-w-oi-${workoutId}`, dispWOi, pWOi, true);
                     }
                 }
-
-                weekKpsh += workoutKpsh;
-                weekOt += workoutOt;
+                weekKpsh += workoutKpsh; weekOt += workoutOt;
             });
 
             const dispKpsh = Math.round(weekKpsh);
@@ -974,7 +977,6 @@
                     const pKpsh = parseFloat(parentBlock.querySelector('.w-kpsh').textContent) || 0;
                     const pOt = parseFloat(parentBlock.querySelector('.w-ot').textContent) || 0;
                     const pOi = parseFloat(parentBlock.querySelector('.w-oi').textContent) || 0;
-
                     setTrend(`trend-kpsh-${weekBlock.id.split('-')[1]}`, dispKpsh, pKpsh);
                     setTrend(`trend-ot-${weekBlock.id.split('-')[1]}`, dispOt, pOt);
                     setTrend(`trend-oi-${weekBlock.id.split('-')[1]}`, dispOi, pOi, true);
@@ -986,33 +988,20 @@
     function setTrend(elementId, current, parent, isOi = false) {
         const el = document.getElementById(elementId);
         if (!el) return;
-        
         const diff = current - parent;
-        
-        if (Math.abs(diff) < 0.1) {
-            el.innerHTML = '';
-            return;
-        }
-
+        if (Math.abs(diff) < 0.1) { el.innerHTML = ''; return; }
         const isUp = diff > 0;
         const colorClass = isUp ? 'trend-up' : 'trend-down';
         const arrow = isUp ? '▲' : '▼';
         const sign = isUp ? '+' : '';
         const diffText = isOi ? diff.toFixed(1) : Math.round(diff);
-
         el.innerHTML = `<span class="trend-indicator ${colorClass}" title="Разница: ${sign}${diffText}">${arrow}</span>`;
     }
 
-    // Инициализация при загрузке страницы
+    // Инициализация
     window.onload = () => {
         loadDictionaryData(); 
-        const isLoaded = loadLocalState(); // Пока грузим локально, чтобы не потерять данные, если ты просто обновил страницу
-        
-        if (!isLoaded) {
-            addPmRow(); addPmRow(); addPmRow();
-            showTimelinePlaceholder();
-            addNewCycle();
-        }
+        // Сама загрузка данных (локально или облако) происходит в модуле Firebase выше
     };
 </script>
 </body>

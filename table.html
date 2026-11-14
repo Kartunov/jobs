@@ -37,10 +37,13 @@
 
         .save-status { font-size: 12px; color: #27ae60; margin-right: 15px; display: none;}
         
+        /* Кнопки экспорта/импорта */
         .btn-export { background-color: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: 10px; font-size: 12px;}
         .btn-export:hover { background-color: #219150; }
         .btn-json { background-color: #f39c12; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: 10px; font-size: 12px;}
         .btn-json:hover { background-color: #d68910; }
+        .btn-import { background-color: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: 10px; font-size: 12px;}
+        .btn-import:hover { background-color: #2980b9; }
 
         .layout { display: flex; gap: 20px; max-width: 1600px; margin: 0 auto; height: 95vh; width: 100%; overflow: hidden; }
         .left-panel { flex: 0 0 60%; overflow-y: auto; padding-right: 10px; }
@@ -89,6 +92,8 @@
         <span id="save-indicator" class="save-status">Сохранено ☁️</span>
         <button class="btn-export" onclick="exportToWord()">📄 Скачать Word</button>
         <button class="btn-json" onclick="exportToJSON()">💾 Скачать JSON</button>
+        <button class="btn-import" onclick="document.getElementById('import-json').click()">📂 Загрузить JSON</button>
+        <input type="file" id="import-json" accept=".json" style="display: none;" onchange="importFromJSON(event)">
     </div>
 </div>
 
@@ -1071,11 +1076,9 @@
     // ЭКСПОРТ ДАННЫХ
     // ==========================================
     
-    // 1. Экспорт в Word (красивая таблица)
     function exportToWord() {
         const progTitle = document.getElementById('program-title').value || 'Тренировочная программа';
         
-        // Генерируем HTML, который идеально откроется в Word
         let tableHtml = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
@@ -1122,7 +1125,6 @@
                             const reps = setBlock.querySelector('.set-reps').value;
                             
                             if (weight && sets && reps) {
-                                // Формат: вес подх х повт
                                 setsText.push(`${weight} ${sets}x${reps}`);
                             }
                         });
@@ -1132,7 +1134,6 @@
                         }
                     });
                     
-                    // Если в тренировке были упражнения, добавляем их, иначе оставляем пустым
                     tableHtml += `<td class="exercises">${exText || ''}</td>`;
                     tableHtml += `</tr>`;
                 });
@@ -1142,7 +1143,6 @@
 
         tableHtml += `</body></html>`;
 
-        // Создаем файл
         const blob = new Blob(['\ufeff', tableHtml], { type: 'application/msword' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -1154,7 +1154,6 @@
         URL.revokeObjectURL(url);
     }
 
-    // 2. Экспорт в JSON (сырые данные)
     function exportToJSON() {
         const state = getCurrentState();
         const progTitle = document.getElementById('program-title').value || 'program';
@@ -1168,6 +1167,27 @@
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+    }
+
+    // ИМПОРТ ИЗ JSON
+    function importFromJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const state = JSON.parse(e.target.result);
+                renderState(state); // Отрисовываем загруженные данные
+                alert('✅ Данные успешно загружены из файла!');
+                event.target.value = ''; // Очищаем инпут, чтобы можно было загрузить тот же файл снова
+            } catch (err) {
+                console.error("Ошибка парсинга JSON: ", err);
+                alert('❌ Ошибка чтения файла. Убедитесь, что это корректный JSON.');
+                event.target.value = '';
+            }
+        };
+        reader.readAsText(file);
     }
 
     window.onload = () => { loadDictionaryData(); };

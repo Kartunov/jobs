@@ -37,7 +37,6 @@
 
         .save-status { font-size: 12px; color: #27ae60; margin-right: 15px; display: none;}
         
-        /* Кнопки экспорта/импорта */
         .btn-export { background-color: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: 10px; font-size: 12px;}
         .btn-export:hover { background-color: #219150; }
         .btn-json { background-color: #f39c12; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; margin-left: 10px; font-size: 12px;}
@@ -1116,24 +1115,36 @@
                     let exText = '';
                     workout.querySelectorAll('.workout-tbody tr').forEach(tr => {
                         const exName = tr.querySelector('.ex-name').value;
-                        const comment = tr.querySelector('.ex-comment') ? tr.querySelector('.ex-comment').value : '';
+                        if (!exName) return; // Если упражнение не выбрано, пропускаем строку
+                        
+                        const comment = tr.querySelector('.ex-comment') ? tr.querySelector('.ex-comment').value.trim() : '';
                         
                         let setsText = [];
                         tr.querySelectorAll('.set-block').forEach(setBlock => {
-                            const weight = setBlock.querySelector('.set-weight').value;
-                            const sets = setBlock.querySelector('.set-sets').value;
-                            const reps = setBlock.querySelector('.set-reps').value;
+                            const weight = setBlock.querySelector('.set-weight').value.trim();
+                            const sets = setBlock.querySelector('.set-sets').value.trim();
+                            const reps = setBlock.querySelector('.set-reps').value.trim();
                             
-                            if (weight && sets && reps) {
-                                setsText.push(`${weight} ${sets}x${reps}`);
+                            // Если есть подходы и повторы, добавляем их
+                            if (sets && reps) {
+                                let s = `${sets}x${reps}`;
+                                if (weight) s = `${weight} ${s}`; // Вес подставляем, только если он есть
+                                setsText.push(s);
                             }
                         });
 
-                        if (setsText.length > 0) {
-                            exText += `${exName}: ${setsText.join(' ')} ${comment ? `(${comment})` : ''}<br>`;
+                        // Формируем строку упражнения, даже если нет подходов, но есть комментарий
+                        let line = `${exName}:`;
+                        if (setsText.length > 0) line += ` ${setsText.join(' ')}`;
+                        if (comment) {
+                            if (setsText.length > 0) line += ` (${comment})`;
+                            else line += ` ${comment}`;
                         }
+                        
+                        exText += `${line}<br>`;
                     });
                     
+                    // Если в тренировке вообще ничего не заполнено, оставляем пустую ячейку, иначе выводим текст
                     tableHtml += `<td class="exercises">${exText || ''}</td>`;
                     tableHtml += `</tr>`;
                 });
@@ -1169,7 +1180,6 @@
         URL.revokeObjectURL(url);
     }
 
-    // ИМПОРТ ИЗ JSON
     function importFromJSON(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -1178,9 +1188,9 @@
         reader.onload = (e) => {
             try {
                 const state = JSON.parse(e.target.result);
-                renderState(state); // Отрисовываем загруженные данные
+                renderState(state); 
                 alert('✅ Данные успешно загружены из файла!');
-                event.target.value = ''; // Очищаем инпут, чтобы можно было загрузить тот же файл снова
+                event.target.value = ''; 
             } catch (err) {
                 console.error("Ошибка парсинга JSON: ", err);
                 alert('❌ Ошибка чтения файла. Убедитесь, что это корректный JSON.');

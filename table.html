@@ -6,6 +6,8 @@
     <title>Редактор программ</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Плагин для отображения процентов на круговых диаграммах -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <style>
         /* Глобальный фикс от вылета */
         html, body { max-width: 100vw; overflow-x: hidden; }
@@ -68,7 +70,7 @@
         .chart-select { padding: 4px; border-radius: 4px; border: 1px solid #ccc; font-family: inherit; font-size: 12px; width: 100%; margin-bottom: 10px;}
         
         .canvas-wrapper { position: relative; height: 220px; width: 100%; max-width: 100%; overflow: hidden; }
-        .canvas-wrapper.small { height: 140px; }
+        .canvas-wrapper.small { height: 200px; }
 
         /* Стрелочки динамики */
         .trend-indicator { font-size: 10px; margin-left: 3px; cursor: help; position: relative; display: inline-block; }
@@ -203,18 +205,23 @@
                 </div>
             </div>
 
-            <!-- ГРАФИК 4 (НОВЫЙ): Зоны интенсивности -->
+            <!-- ГРАФИК 4: Зоны интенсивности -->
             <div class="chart-block">
                 <div class="chart-header" onclick="toggleChart('chart-zones-body', this)">
                     <span>🎯 Зоны интенсивности (КПШ)</span>
                     <span class="collapse-icon">►</span>
                 </div>
                 <div class="chart-body" id="chart-zones-body">
+                    
                     <div style="font-size:12px; margin-bottom:5px; font-weight:bold; text-align: center;">Выбранное упражнение</div>
+                    <select class="chart-select" id="zone-chart-select" onchange="renderZoneCharts()">
+                        <option value="">Выберите упражнение...</option>
+                    </select>
                     <div class="canvas-wrapper small">
                         <canvas id="chart-zone-ex"></canvas>
                     </div>
-                    <div style="font-size:12px; margin-bottom:5px; margin-top: 15px; font-weight:bold; text-align: center;">Все упражнения (с ПМ)</div>
+                    
+                    <div style="font-size:12px; margin-bottom:5px; margin-top: 20px; font-weight:bold; text-align: center;">Все упражнения (с ПМ)</div>
                     <div class="canvas-wrapper small">
                         <canvas id="chart-zone-all"></canvas>
                     </div>
@@ -846,13 +853,15 @@
             }
         });
         renderCharts();
-        renderZoneCharts(); // ВЫЗОВ НОВЫХ ДИАГРАММ
+        renderZoneCharts(); 
         updateChartDropdown();
     }
 
     // ==========================================
     // ЛОГИКА ГРАФИКОВ 
     // ==========================================
+    Chart.register(ChartDataLabels); // Регистрация плагина для процентов
+
     const verticalLinePlugin = {
         id: 'verticalLine',
         beforeDraw: (chart) => {
@@ -891,15 +900,29 @@
     }
 
     function updateChartDropdown() {
-        const select = document.getElementById('ex-chart-select');
-        if (!select) return;
-        const currentVal = select.value;
         const pmData = getPmData();
-        let options = `<option value="">Выберите упражнение...</option>`;
-        Object.keys(pmData).forEach(ex => {
-            if (ex) options += `<option value="${ex}" ${ex === currentVal ? 'selected' : ''}>${ex}</option>`;
-        });
-        select.innerHTML = options;
+        
+        // Обновляем первый селект (Линейный график)
+        const select1 = document.getElementById('ex-chart-select');
+        if (select1) {
+            const currentVal1 = select1.value;
+            let options1 = `<option value="">Выберите упражнение...</option>`;
+            Object.keys(pmData).forEach(ex => {
+                if (ex) options1 += `<option value="${ex}" ${ex === currentVal1 ? 'selected' : ''}>${ex}</option>`;
+            });
+            select1.innerHTML = options1;
+        }
+
+        // Обновляем второй селект (Круговая диаграмма)
+        const select2 = document.getElementById('zone-chart-select');
+        if (select2) {
+            const currentVal2 = select2.value;
+            let options2 = `<option value="">Выберите упражнение...</option>`;
+            Object.keys(pmData).forEach(ex => {
+                if (ex) options2 += `<option value="${ex}" ${ex === currentVal2 ? 'selected' : ''}>${ex}</option>`;
+            });
+            select2.innerHTML = options2;
+        }
     }
 
     document.querySelectorAll('.metric-toggles').forEach(toggle => {
@@ -964,7 +987,11 @@
     function getCommonOptions(lines = [], showLegend = true) {
         return {
             responsive: true, maintainAspectRatio: false, spanGaps: true, interaction: { mode: 'index', intersect: false },
-            plugins: { legend: { display: showLegend, position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }, verticalLine: { lines: lines } },
+            plugins: { 
+                legend: { display: showLegend, position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }, 
+                verticalLine: { lines: lines },
+                datalabels: { display: false } // Отключаем проценты для линейных графиков
+            },
             scales: { x: { grid: { display: false }, ticks: { autoSkip: true, maxTicksLimit: 8, font: { size: 10 } } }, y: { beginAtZero: true, suggestedMax: 10, ticks: { font: { size: 10 } } } },
             elements: { line: { tension: 0.3, borderWidth: 2 }, point: { radius: 4, hoverRadius: 7 } }
         };
@@ -1002,9 +1029,10 @@
         chartWeek = new Chart(document.getElementById('chart-week').getContext('2d'), { type: 'line', data: { labels: labelsWeek, datasets: weekDatasets }, options: getCommonOptions(cycleLines) });
     }
 
-    // --- НОВАЯ ЛОГИКА ДЛЯ ЗОН ИНТЕНСИВНОСТИ ---
+    // --- НОВАЯ ЛОГИКА ДЛЯ ЗОН ИНТЕНСИВНОСТИ (КРУГОВЫЕ) ---
     function renderZoneCharts() {
-        const selectedEx = document.getElementById('ex-chart-select').value;
+        // Берем упражнение из НОВОГО селекта
+        const selectedEx = document.getElementById('zone-chart-select').value;
         const pmData = getPmData();
 
         const zones = ['50-59%', '60-69%', '70-79%', '80-89%', '90%+'];
@@ -1044,35 +1072,55 @@
             });
         });
 
-        const commonOptions = {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { 
-                x: { grid: { display: false }, ticks: { font: { size: 10 } } }, 
-                y: { beginAtZero: true, ticks: { font: { size: 10 } } } 
+        // Настройки для круговых диаграмм
+        const getDoughnutOptions = () => ({
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { 
+                    position: 'right', 
+                    labels: { boxWidth: 12, font: { size: 10 } } 
+                },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 11 },
+                    formatter: (value, ctx) => {
+                        let sum = 0;
+                        let dataArr = ctx.chart.data.datasets[0].data;
+                        dataArr.map(data => { sum += data; });
+                        let percentage = (value * 100 / sum).toFixed(1) + "%";
+                        return sum === 0 ? '' : percentage;
+                    },
+                    display: (ctx) => {
+                        // Показываем процент, только если значение > 0 и его доля достаточно большая (чтобы текст не наезжал)
+                        const val = ctx.dataset.data[ctx.dataIndex];
+                        let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                        return val > 0 && (val / sum) > 0.05; 
+                    }
+                }
             }
-        };
-
-        // График для упражнения
-        if (chartZoneEx) chartZoneEx.destroy();
-        chartZoneEx = new Chart(document.getElementById('chart-zone-ex').getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: zones,
-                datasets: [{ label: 'КПШ', data: exZoneData, backgroundColor: zoneColors }]
-            },
-            options: commonOptions
         });
 
-        // График для всех
-        if (chartZoneAll) chartZoneAll.destroy();
-        chartZoneAll = new Chart(document.getElementById('chart-zone-all').getContext('2d'), {
-            type: 'bar',
+        // 1. График для выбранного упражнения
+        if (chartZoneEx) chartZoneEx.destroy();
+        chartZoneEx = new Chart(document.getElementById('chart-zone-ex').getContext('2d'), {
+            type: 'doughnut',
             data: {
                 labels: zones,
-                datasets: [{ label: 'КПШ', data: allZoneData, backgroundColor: zoneColors }]
+                datasets: [{ data: exZoneData, backgroundColor: zoneColors, borderWidth: 1 }]
             },
-            options: commonOptions
+            options: getDoughnutOptions()
+        });
+
+        // 2. График для всех упражнений
+        if (chartZoneAll) chartZoneAll.destroy();
+        chartZoneAll = new Chart(document.getElementById('chart-zone-all').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: zones,
+                datasets: [{ data: allZoneData, backgroundColor: zoneColors, borderWidth: 1 }]
+            },
+            options: getDoughnutOptions()
         });
     }
 

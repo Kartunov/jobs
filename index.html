@@ -5,26 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Библиотека тренера</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .auth-container { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; }
-        .user-profile { display: flex; align-items: center; gap: 10px; background: white; padding: 5px 15px; border-radius: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 14px;}
-        .user-avatar { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #3498db; }
-        .btn-logout { background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px;}
-        .btn-logout:hover { background: #c0392b; }
-        
-        /* Стили для клиентов */
-        .client-card { position: relative; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e1e4e6; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s; text-decoration: none; color: inherit; }
-        .client-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-color: #3498db; }
-        .client-avatar { width: 50px; height: 50px; border-radius: 50%; background: #ecf0f1; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #7f8c8d; flex-shrink: 0;}
-        .client-info h3 { margin: 0 0 5px 0; color: #2c3e50; }
-        .client-info p { margin: 0; color: #7f8c8d; font-size: 13px; }
-        
-        /* Кнопка удаления клиента */
-        .btn-delete-client { position: absolute; top: 10px; right: 10px; background: #ffeaea; color: #e74c3c; border: none; width: 24px; height: 24px; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;}
-        .btn-delete-client:hover { background: #e74c3c; color: white; }
-
-        .empty-state { text-align: center; padding: 40px; background: white; border-radius: 8px; border: 2px dashed #ccc; color: #7f8c8d; }
-    </style>
+    <!-- Скрипт для мгновенного применения темы до отрисовки страницы -->
+    <script>
+        const savedTheme = localStorage.getItem('appTheme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
 </head>
 <body>
 
@@ -32,35 +17,40 @@
     <div class="library-header">
         <h1 class="library-title">Панель управления</h1>
         
-        <div class="auth-container" id="auth-container">
-            <span style="color: #7f8c8d; font-size: 14px;">Загрузка...</span>
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <!-- Переключатель тем -->
+            <div class="theme-switcher" id="theme-switcher">
+                <div class="theme-btn" data-theme-val="light" title="Светлая"></div>
+                <div class="theme-btn" data-theme-val="dark" title="Темная"></div>
+                <div class="theme-btn" data-theme-val="blue-purple" title="Сине-фиолетовая"></div>
+                <div class="theme-btn" data-theme-val="black-orange" title="Черно-оранжевая"></div>
+            </div>
+
+            <!-- Авторизация -->
+            <div id="auth-container">
+                <span style="color: var(--text-muted); font-size: 14px;">Загрузка...</span>
+            </div>
         </div>
     </div>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; margin-top: 30px;">
-        <h2 style="color: #2c3e50; font-size: 18px; margin: 0;">Мои спортсмены</h2>
-        <button class="btn-add" id="add-client-btn" style="display: none;">+ Добавить клиента</button>
-    </div>
+    <h2 style="font-size: 16px; margin-bottom: 15px; font-weight: normal; color: var(--text-muted);">Инструменты</h2>
     
-    <div id="clients-container" class="folders-grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
-        <!-- Сюда загрузятся клиенты -->
-    </div>
-
-    <h2 style="color: #2c3e50; font-size: 18px; margin-top: 40px; margin-bottom: 15px;">Инструменты</h2>
     <div class="folders-grid">
-        <a href="library.html" class="folder-card" style="text-decoration: none;">
+        <a href="library.html" class="folder-card">
             <div class="folder-icon">📚</div>
             <div class="folder-name">Справочник упражнений</div>
             <div class="folder-stats">База упражнений по группам мышц</div>
         </a>
-        <a href="table.html" class="folder-card" style="text-decoration: none;">
+
+        <a href="table.html" class="folder-card">
             <div class="folder-icon">📝</div>
-            <div class="folder-name">Редактор (Черновик)</div>
-            <div class="folder-stats">Свободный конструктор программ</div>
+            <div class="folder-name">Редактор программ</div>
+            <div class="folder-stats">Конструктор тренировок и циклов</div>
         </a>
     </div>
 </div>
 
+<!-- ПОДКЛЮЧАЕМ FIREBASE -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
@@ -82,13 +72,8 @@
   const provider = new GoogleAuthProvider();
 
   const authContainer = document.getElementById('auth-container');
-  const clientsContainer = document.getElementById('clients-container');
-  const addClientBtn = document.getElementById('add-client-btn');
-
-  let currentUser = null;
 
   function updateUI(user) {
-    currentUser = user;
     if (user) {
       authContainer.innerHTML = `
         <div class="user-profile">
@@ -98,86 +83,39 @@
         </div>
       `;
       document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
-      addClientBtn.style.display = 'block';
-      loadClients(user.uid);
     } else {
       authContainer.innerHTML = `<button class="btn-add" id="login-btn">Войти через Google</button>`;
       document.getElementById('login-btn').addEventListener('click', () => signInWithPopup(auth, provider));
-      clientsContainer.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;">Войдите, чтобы увидеть список спортсменов.</div>`;
-      addClientBtn.style.display = 'none';
     }
   }
-
-  async function loadClients(uid) {
-    clientsContainer.innerHTML = '<div style="padding: 20px; color: #7f8c8d;">Загрузка клиентов...</div>';
-    try {
-      const clientsRef = collection(db, "users", uid, "clients");
-      const querySnapshot = await getDocs(clientsRef);
-      
-      if (querySnapshot.empty) {
-        clientsContainer.innerHTML = `<div class="empty-state" style="grid-column: 1 / -1;">У вас пока нет клиентов. Нажмите "+ Добавить клиента".</div>`;
-        return;
-      }
-
-      let html = '';
-      querySnapshot.forEach((docSnap) => {
-        const client = docSnap.data();
-        const initial = client.name ? client.name.charAt(0).toUpperCase() : '?';
-        
-        // Добавляем кнопку удаления с preventDefault, чтобы не срабатывал переход по ссылке
-        html += `
-          <a href="client.html?id=${docSnap.id}" class="client-card">
-            <button class="btn-delete-client" onclick="deleteClient('${docSnap.id}', event)" title="Удалить клиента">✕</button>
-            <div class="client-avatar">${initial}</div>
-            <div class="client-info">
-              <h3>${client.name}</h3>
-              <p>Открыть программы</p>
-            </div>
-          </a>
-        `;
-      });
-      clientsContainer.innerHTML = html;
-
-      // Делаем функцию deleteClient глобальной, чтобы onclick в HTML её видел
-      window.deleteClient = async (clientId, event) => {
-        event.preventDefault(); // Отменяем переход по ссылке
-        event.stopPropagation(); // Останавливаем всплытие клика
-        
-        if (confirm('Вы уверены, что хотите удалить этого клиента и ВСЕ его программы?')) {
-          try {
-            await deleteDoc(doc(db, "users", uid, "clients", clientId));
-            loadClients(uid);
-          } catch (e) {
-            console.error("Ошибка удаления: ", e);
-            alert("Ошибка при удалении клиента.");
-          }
-        }
-      };
-
-    } catch (e) {
-      console.error("Ошибка загрузки клиентов: ", e);
-      clientsContainer.innerHTML = '<div style="color: red;">Ошибка загрузки клиентов.</div>';
-    }
-  }
-
-  addClientBtn.addEventListener('click', async () => {
-    if (!currentUser) return;
-    const name = prompt("Введите имя нового спортсмена:");
-    if (name && name.trim() !== '') {
-      try {
-        await addDoc(collection(db, "users", currentUser.uid, "clients"), {
-          name: name.trim(),
-          createdAt: new Date()
-        });
-        loadClients(currentUser.uid);
-      } catch (e) {
-        console.error("Ошибка добавления: ", e);
-        alert("Не удалось добавить клиента.");
-      }
-    }
-  });
 
   onAuthStateChanged(auth, updateUI);
+</script>
+
+<!-- СКРИПТ ДЛЯ ПЕРЕКЛЮЧЕНИЯ ТЕМ -->
+<script>
+    const themeBtns = document.querySelectorAll('.theme-btn');
+    
+    // Устанавливаем активную кнопку при загрузке
+    function updateActiveBtn(theme) {
+        themeBtns.forEach(btn => {
+            if (btn.getAttribute('data-theme-val') === theme) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    }
+
+    let currentTheme = localStorage.getItem('appTheme') || 'light';
+    updateActiveBtn(currentTheme);
+
+    // Обработчик кликов
+    themeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const theme = btn.getAttribute('data-theme-val');
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('appTheme', theme);
+            updateActiveBtn(theme);
+        });
+    });
 </script>
 
 </body>

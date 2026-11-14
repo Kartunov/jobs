@@ -54,7 +54,6 @@
         .chart-header { background: #f8f9fa; padding: 10px 15px; font-weight: bold; color: #2c3e50; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; font-size: 13px;}
         .chart-header:hover { background: #ecf0f1; }
         
-        /* По умолчанию графики скрыты */
         .chart-body { padding: 15px; display: none; }
         .chart-body.active { display: block; }
         
@@ -69,6 +68,7 @@
         .chart-select { padding: 4px; border-radius: 4px; border: 1px solid #ccc; font-family: inherit; font-size: 12px; width: 100%; margin-bottom: 10px;}
         
         .canvas-wrapper { position: relative; height: 220px; width: 100%; max-width: 100%; overflow: hidden; }
+        .canvas-wrapper.small { height: 140px; }
 
         /* Стрелочки динамики */
         .trend-indicator { font-size: 10px; margin-left: 3px; cursor: help; position: relative; display: inline-block; }
@@ -131,7 +131,7 @@
     <div class="right-panel">
         <div class="charts-container">
             
-            <!-- ГРАФИК 1: Свернут по умолчанию -->
+            <!-- ГРАФИК 1: Динамика упражнения -->
             <div class="chart-block">
                 <div class="chart-header" onclick="toggleChart('chart-ex-body', this)">
                     <span>🏋️‍♂️ Динамика упражнения</span>
@@ -157,7 +157,7 @@
                 </div>
             </div>
 
-            <!-- ГРАФИК 2: Свернут по умолчанию -->
+            <!-- ГРАФИК 2: Сумма за тренировку -->
             <div class="chart-block">
                 <div class="chart-header" onclick="toggleChart('chart-workout-body', this)">
                     <span>📊 Сумма за тренировку</span>
@@ -180,7 +180,7 @@
                 </div>
             </div>
 
-            <!-- ГРАФИК 3: Свернут по умолчанию -->
+            <!-- ГРАФИК 3: Сумма за неделю -->
             <div class="chart-block">
                 <div class="chart-header" onclick="toggleChart('chart-week-body', this)">
                     <span>📅 Сумма за неделю</span>
@@ -199,6 +199,24 @@
                     </div>
                     <div class="canvas-wrapper">
                         <canvas id="chart-week"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ГРАФИК 4 (НОВЫЙ): Зоны интенсивности -->
+            <div class="chart-block">
+                <div class="chart-header" onclick="toggleChart('chart-zones-body', this)">
+                    <span>🎯 Зоны интенсивности (КПШ)</span>
+                    <span class="collapse-icon">►</span>
+                </div>
+                <div class="chart-body" id="chart-zones-body">
+                    <div style="font-size:12px; margin-bottom:5px; font-weight:bold; text-align: center;">Выбранное упражнение</div>
+                    <div class="canvas-wrapper small">
+                        <canvas id="chart-zone-ex"></canvas>
+                    </div>
+                    <div style="font-size:12px; margin-bottom:5px; margin-top: 15px; font-weight:bold; text-align: center;">Все упражнения (с ПМ)</div>
+                    <div class="canvas-wrapper small">
+                        <canvas id="chart-zone-all"></canvas>
                     </div>
                 </div>
             </div>
@@ -828,6 +846,7 @@
             }
         });
         renderCharts();
+        renderZoneCharts(); // ВЫЗОВ НОВЫХ ДИАГРАММ
         updateChartDropdown();
     }
 
@@ -863,6 +882,7 @@
     Chart.register(verticalLinePlugin);
 
     let chartEx = null, chartWo = null, chartWeek = null;
+    let chartZoneEx = null, chartZoneAll = null;
 
     function toggleChart(bodyId, headerEl) {
         const body = document.getElementById(bodyId);
@@ -980,6 +1000,80 @@
         });
         if (chartWeek) chartWeek.destroy();
         chartWeek = new Chart(document.getElementById('chart-week').getContext('2d'), { type: 'line', data: { labels: labelsWeek, datasets: weekDatasets }, options: getCommonOptions(cycleLines) });
+    }
+
+    // --- НОВАЯ ЛОГИКА ДЛЯ ЗОН ИНТЕНСИВНОСТИ ---
+    function renderZoneCharts() {
+        const selectedEx = document.getElementById('ex-chart-select').value;
+        const pmData = getPmData();
+
+        const zones = ['50-59%', '60-69%', '70-79%', '80-89%', '90%+'];
+        const zoneColors = ['#2ecc71', '#f1c40f', '#e67e22', '#e74c3c', '#2c3e50'];
+        
+        let exZoneData = [0, 0, 0, 0, 0];
+        let allZoneData = [0, 0, 0, 0, 0];
+
+        document.querySelectorAll('.workout-tbody tr').forEach(tr => {
+            const exName = tr.querySelector('.ex-name').value;
+            const pm = pmData[exName] || 0;
+            if (pm === 0) return; 
+
+            tr.querySelectorAll('.set-block').forEach(setBlock => {
+                const weight = parseFloat(setBlock.querySelector('.set-weight').value) || 0;
+                const sets = parseFloat(setBlock.querySelector('.set-sets').value) || 0;
+                const reps = parseFloat(setBlock.querySelector('.set-reps').value) || 0;
+
+                if (weight > 0 && sets > 0 && reps > 0) {
+                    const percent = (weight / pm) * 100;
+                    const kpsh = sets * reps;
+
+                    let zoneIndex = -1;
+                    if (percent >= 90) zoneIndex = 4;
+                    else if (percent >= 80) zoneIndex = 3;
+                    else if (percent >= 70) zoneIndex = 2;
+                    else if (percent >= 60) zoneIndex = 1;
+                    else if (percent >= 50) zoneIndex = 0;
+
+                    if (zoneIndex !== -1) {
+                        allZoneData[zoneIndex] += kpsh;
+                        if (exName === selectedEx) {
+                            exZoneData[zoneIndex] += kpsh;
+                        }
+                    }
+                }
+            });
+        });
+
+        const commonOptions = {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { 
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } }, 
+                y: { beginAtZero: true, ticks: { font: { size: 10 } } } 
+            }
+        };
+
+        // График для упражнения
+        if (chartZoneEx) chartZoneEx.destroy();
+        chartZoneEx = new Chart(document.getElementById('chart-zone-ex').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: zones,
+                datasets: [{ label: 'КПШ', data: exZoneData, backgroundColor: zoneColors }]
+            },
+            options: commonOptions
+        });
+
+        // График для всех
+        if (chartZoneAll) chartZoneAll.destroy();
+        chartZoneAll = new Chart(document.getElementById('chart-zone-all').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: zones,
+                datasets: [{ label: 'КПШ', data: allZoneData, backgroundColor: zoneColors }]
+            },
+            options: commonOptions
+        });
     }
 
     window.onload = () => { loadDictionaryData(); };
